@@ -21,7 +21,7 @@ etcd3-py
      :target: https://pyup.io/repos/github/Revolution1/etcd3-py/
      :alt: Python 3
 
-Python client for etcd v3 (Using grpc-json-gateway) Edit
+Python client for etcd v3 (Using grpc-json-gateway)
 
 
 * Free software: Apache Software License 2.0
@@ -32,12 +32,3 @@ Features
 --------
 
 * TODO
-
-Credits
----------
-
-This package was created with Cookiecutter_ and the `audreyr/cookiecutter-pypackage`_ project template.
-
-.. _Cookiecutter: https://github.com/audreyr/cookiecutter
-.. _`audreyr/cookiecutter-pypackage`: https://github.com/audreyr/cookiecutter-pypackage
-
