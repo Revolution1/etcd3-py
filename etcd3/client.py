@@ -6,7 +6,7 @@ import traceback
 import requests
 from six.moves import urllib_parse
 
-from __version__ import __version__
+from version import __version__
 from apis import BaseAPI
 from errors import Etcd3Exception
 from swagger_helper import SwaggerSpec
@@ -27,7 +27,7 @@ def iter_response(resp):
     """
     buf = []
     bracket_flag = 0
-    for c in resp.iter_content():
+    for c in resp.iter_content(chunk_size=1):
         buf.append(c)
         if c == '{':
             bracket_flag += 1
@@ -121,7 +121,7 @@ class Etcd3APIClient(BaseAPI):
             return
         try:
             data = resp.json()
-        except:
+        except Exception:
             _, _, tb = sys.exc_info()
             error = ''.join(traceback.format_tb(tb))
             code = -1

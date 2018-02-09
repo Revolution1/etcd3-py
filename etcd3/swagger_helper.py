@@ -11,7 +11,7 @@ import six
 
 try:
     import yaml
-except:
+except ImportError:
     yaml = None
 
 
@@ -59,12 +59,12 @@ class SwaggerSpec(object):
         else:
             try:
                 self.spec = json.loads(spec_content)
-            except:
+            except Exception:
                 if not yaml:
                     raise ImportError("No module named yaml")
                 try:
                     self.spec = yaml.safe_load(spec_content)
-                except:
+                except Exception:
                     raise ValueError("Fail to load spec")
 
     @functools32.lru_cache()
@@ -233,7 +233,7 @@ class SwaggerNode(object):
                         this._node = self
                         this._data = data
                         for k in self.properties._keys():
-                            if not k in data:
+                            if k not in data:
                                 continue
                             v = data[k]
                             m = self.properties._get(k)
@@ -352,8 +352,8 @@ class SwaggerNode(object):
     __getitem__ = _get
 
     def __dir__(self):
-        return [k for k in type(self).__dict__.keys() if not k.startswith('__')] \
-               + [_format_path(k) for k in self._node.keys()]
+        return [k for k in type(self).__dict__.keys() if not k.startswith('__')] + \
+               [_format_path(k) for k in self._node.keys()]
 
     def __contains__(self, item):
         return item in self._node
