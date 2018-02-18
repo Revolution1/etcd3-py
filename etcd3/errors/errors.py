@@ -6,10 +6,12 @@ class Etcd3Exception(Exception):
         self.code = code
         self.codeText = codeText[code]
         self.status = status
-        self.error = error
+        self.error = error.strip()
 
     def __repr__(self):
-        return "Etcd3Exception(code='%s', message='%s')" % (self.code, self.error)
+        return "<Etcd3Exception error:'%s', code:%s>" % (self.error, self.code)
+
+    __str__ = __repr__
 
     def as_dict(self):
         return {

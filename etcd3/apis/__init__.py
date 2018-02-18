@@ -1,3 +1,4 @@
-class BaseAPI(object):
-    def call_rpc(self, method, data=None, stream=False, **kwargs):
-        raise NotImplementedError
+from base import BaseAPI
+from maintenance import MaintenanceAPI
+
+__all__ = ['BaseAPI', 'MaintenanceAPI']

@@ -1,15 +1,13 @@
 import json
 import os
-import sys
-import traceback
 
 import requests
 from six.moves import urllib_parse
 
-from version import __version__
-from apis import BaseAPI
+from apis import MaintenanceAPI
 from errors import Etcd3Exception
 from swagger_helper import SwaggerSpec
+from version import __version__
 
 rpc_swagger_json = os.path.join(os.path.dirname(__file__), 'rpc.swagger.json')
 
@@ -19,8 +17,8 @@ swaggerSpec = SwaggerSpec(rpc_swagger_json)
 def iter_response(resp):
     """
     yield response content by every json object
-    we don't yield by line, because the content of gRPC-JSON-Gateway stream response
-    does not have a delimiter  between each object by default.
+    we don't yield by line, because the content of etcd's gRPC-JSON-Gateway stream response
+    does not have a delimiter between each object by default. (only one line)
     https://github.com/grpc-ecosystem/grpc-gateway/pull/497/files
     :param resp: Response
     :return: dict
@@ -36,11 +34,10 @@ def iter_response(resp):
         if bracket_flag == 0:
             s = ''.join(buf)
             buf = []
-            if s:
-                yield json.loads(s)
+            yield s
 
 
-class Etcd3APIClient(BaseAPI):
+class Etcd3APIClient(MaintenanceAPI):
     response_class = requests.models.Response
 
     def __init__(self, host='localhost', port=2379, protocol='http',
@@ -48,6 +45,7 @@ class Etcd3APIClient(BaseAPI):
                  timeout=None, headers=None, user_agent=None, pool_size=30,
                  user=None, password=None, token=None):
         self.session = requests.session()
+        self.__set_conn_pool(pool_size)
         self.host = host
         self.port = port
         self.cert = None
@@ -69,6 +67,9 @@ class Etcd3APIClient(BaseAPI):
         self.user = user
         self.password = password
         self.token = token
+
+    def __set_conn_pool(self, pool_size):
+        pass
 
     @property
     def baseurl(self):
@@ -99,6 +100,9 @@ class Etcd3APIClient(BaseAPI):
         swpath = swaggerSpec.getPath(method)
         respModel = swpath.post.responses._200.schema.getModel()
         for data in iter_response(resp):
+            if not data:
+                continue
+            data = json.loads(data)
             data = data.get('result', {})  # the real data is been put under the key: 'result'
             if decode:
                 data = cls.decodeRPCResponse(method, data)
@@ -122,9 +126,8 @@ class Etcd3APIClient(BaseAPI):
         try:
             data = resp.json()
         except Exception:
-            _, _, tb = sys.exc_info()
-            error = ''.join(traceback.format_tb(tb))
-            code = -1
+            error = resp.content
+            code = 2
         else:
             error = data.get('error')
             code = data.get('code')
@@ -167,7 +170,12 @@ if __name__ == '__main__':
     # print(client.call_rpc('/v3alpha/kv/put', {'key': 'foo', 'value': 'bar', 'prev_kv': True}).json())
     # print(client.call_rpc('/v3alpha/kv/range', {'key': 'foo'}).json())
     # print(client.call_rpc('/v3alpha/kv/range', {'key': 'foa'}).json())
+    print(client.status())
+    print(client.hash())
     r = client.call_rpc('/v3alpha/watch', {'create_request': {'key': 'foo'}}, stream=True)
     for i in r:
         print(i)
-    print(client.call_rpc('/v3alpha/kv/rang', {'key': 'foa'}).json())
+    try:
+        print(client.call_rpc('/v3alpha/kv/rang', {'key': 'foa'}).json())
+    except Exception as e:
+        print(e)

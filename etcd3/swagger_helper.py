@@ -349,6 +349,10 @@ class SwaggerNode(object):
     def _get(self, k, *args, **kwargs):
         return getattr(self, k, *args, **kwargs)
 
+    def __iter__(self):
+        for k in self._keys():
+            yield self._get(k)
+
     __getitem__ = _get
 
     def __dir__(self):

@@ -1,5 +1,5 @@
-from . import BaseAPI
-from ..models import AlarmAction
+from base import BaseAPI
+from models import AlarmRequestAlarmAction
 
 
 class MaintenanceAPI(BaseAPI):
@@ -20,13 +20,13 @@ class MaintenanceAPI(BaseAPI):
         return self.call_rpc(method, data=data)
 
     def get_alarm(self, member_id, alarm_type):
-        return self.alarm_request(AlarmAction.GET, member_id, alarm_type)
+        return self.alarm_request(AlarmRequestAlarmAction.GET, member_id, alarm_type)
 
     def activate_alarm(self, member_id, alarm_type):
-        return self.alarm_request(AlarmAction.ACTIVATE, member_id, alarm_type)
+        return self.alarm_request(AlarmRequestAlarmAction.ACTIVATE, member_id, alarm_type)
 
     def deactivate_alarm(self, member_id, alarm_type):
-        return self.alarm_request(AlarmAction.DEACTIVATE, member_id, alarm_type)
+        return self.alarm_request(AlarmRequestAlarmAction.DEACTIVATE, member_id, alarm_type)
 
     def defragment(self):
         """
