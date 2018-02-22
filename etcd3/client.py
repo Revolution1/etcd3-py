@@ -5,7 +5,8 @@ import requests
 from six.moves import urllib_parse
 
 from apis import MaintenanceAPI
-from errors import Etcd3Exception
+from errors import Etcd3APIError, Etcd3Exception
+from errors import Etcd3StreamError
 from swagger_helper import SwaggerSpec
 from version import __version__
 
@@ -35,6 +36,8 @@ def iter_response(resp):
             s = ''.join(buf)
             buf = []
             yield s
+        elif bracket_flag < 0:
+            raise Etcd3StreamError("Stream decode error", buf, resp)
 
 
 class Etcd3APIClient(MaintenanceAPI):
@@ -131,7 +134,7 @@ class Etcd3APIClient(MaintenanceAPI):
         else:
             error = data.get('error')
             code = data.get('code')
-        raise Etcd3Exception(error, code, status)
+        raise Etcd3APIError(error, code, status, resp)
 
     def call_rpc(self, method, data=None, stream=False, encode=True, raw=False, **kwargs):
         """
@@ -159,7 +162,10 @@ class Etcd3APIClient(MaintenanceAPI):
         if raw:
             return resp
         if stream:
-            return self.modelizeStreamResponse(method, resp)
+            try:
+                return self.modelizeStreamResponse(method, resp)
+            except Etcd3Exception:
+                resp.close()
         return self.modelizeResponse(method, resp)
 
 
