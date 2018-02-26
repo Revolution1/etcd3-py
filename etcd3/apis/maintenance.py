@@ -1,15 +1,14 @@
 from base import BaseAPI
-from models import AlarmRequestAlarmAction
+from ..models import AlarmRequestAlarmAction
 
 
 class MaintenanceAPI(BaseAPI):
-
     def alarm_request(self, alarm_action, member_id, alarm_type):
         """
         Alarm activates, deactivates, and queries alarms regarding cluster health.
-        :param alarm_action: AlarmAction
-        :param member_id: int
-        :param alarm_type:
+        :type alarm_action: AlarmRequestAlarmAction
+        :type member_id: int
+        :type alarm_type:
         """
         method = '/v3alpha/maintenance/alarm'
         data = {

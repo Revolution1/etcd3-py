@@ -4,6 +4,7 @@ import json
 import keyword
 import os
 import re
+from collections import OrderedDict
 
 import enum
 import functools32
@@ -11,6 +12,7 @@ import six
 
 try:
     import yaml
+    import yaml.resolver
 except ImportError:
     yaml = None
 
@@ -29,13 +31,18 @@ def _format_path(path):
 
 
 def _get_path(node, key, default=None):
+    """
+    :type node: dict
+    :type key: str
+    :param default:
+    :rtype: str, dict
+    """
     n = node.get(key, default)
     if key not in node:
         for k, v in six.iteritems(node):
             if _format_path(k) == key:
-                n = v
-                break
-    return n
+                return k, v
+    return key, n
 
 
 class SwaggerSpec(object):
@@ -58,12 +65,24 @@ class SwaggerSpec(object):
             self.spec = spec_content
         else:
             try:
-                self.spec = json.loads(spec_content)
+                self.spec = json.loads(spec_content, object_pairs_hook=OrderedDict)
             except Exception:
                 if not yaml:
                     raise ImportError("No module named yaml")
                 try:
-                    self.spec = yaml.safe_load(spec_content)
+                    def ordered_load(stream, Loader=yaml.Loader, object_pairs_hook=OrderedDict):
+                        class OrderedLoader(Loader):
+                            pass
+
+                        def construct_mapping(loader, node):
+                            loader.flatten_mapping(node)
+                            return object_pairs_hook(loader.construct_pairs(node))
+
+                        OrderedLoader.add_constructor(
+                            yaml.resolver.BaseResolver.DEFAULT_MAPPING_TAG,
+                            construct_mapping)
+                        return yaml.load(stream, OrderedLoader)
+                    self.spec = ordered_load(spec_content)
                 except Exception:
                     raise ValueError("Fail to load spec")
 
@@ -75,7 +94,7 @@ class SwaggerSpec(object):
             path = ref[2:].split('/')
             rt = self.spec
             for p in path:
-                rt = _get_path(rt, p, {})
+                _, rt = _get_path(rt, p, {})
             if not rt:
                 raise ValueError("No reference '%s' found" % ref)
             return rt, path
@@ -179,11 +198,12 @@ SCHEMA_TYPES = ('string', 'number', 'integer', 'boolean', 'array', 'object')
 
 
 class SwaggerNode(object):
-    def __init__(self, root, node, path, parent=None):
+    def __init__(self, root, node, path, parent=None, name=None):
         self._root = root
         self._node = node
         self._path = path
         self._parent = parent
+        self._name = name
         self._is_path = False
         if len(self._path) > 1 and self._path[-2] == 'paths':
             self._is_path = True
@@ -314,7 +334,7 @@ class SwaggerNode(object):
     @functools32.lru_cache()
     def __getattr__(self, key):
         try:
-            n = _get_path(self._node, key)
+            original_key, n = _get_path(self._node, key)
             if not n:
                 n = self._node[key]
             if isinstance(n, dict):
@@ -322,15 +342,15 @@ class SwaggerNode(object):
                 if ref:
                     ref, path = self._root._ref(ref)
                     if not ref:
-                        return SwaggerNode(self._root, n, path, self)
+                        return SwaggerNode(self._root, n, path, self, name=original_key)
                     ref = copy.copy(ref)
                     for k, v in six.iteritems(n):
                         if k != '$ref':
                             ref[k] = v
-                    return SwaggerNode(self._root, ref, path, self)
+                    return SwaggerNode(self._root, ref, path, self, name=original_key)
                 path = self._path[:]
                 path.append(_format_path(key))
-                return SwaggerNode(self._root, n, path, self)
+                return SwaggerNode(self._root, n, path, self, name=original_key)
             if isinstance(n, (list, tuple)):
                 rt = []
                 for index, item in enumerate(n):
@@ -339,7 +359,7 @@ class SwaggerNode(object):
                         continue
                     path = self._path[:]
                     path.append('%s__%s' % (_format_path(key), index))
-                    rt.append(SwaggerNode(self._root, item, path, self))
+                    rt.append(SwaggerNode(self._root, item, path, self, name=original_key))
                 return rt
             return n
         except KeyError:
