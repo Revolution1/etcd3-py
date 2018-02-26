@@ -1,5 +1,5 @@
-from go_grpc_codes import GRPCCode as codes
-from go_net_http_status import HTTPStatus as http
+from .go_grpc_codes import GRPCCode as codes
+from .go_net_http_status import HTTPStatus as http
 
 
 def HTTPStatusFromCode(code):

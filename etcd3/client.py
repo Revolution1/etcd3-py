@@ -2,17 +2,52 @@ import json
 import os
 
 import requests
+import six
 from six.moves import urllib_parse
 
-from apis import MaintenanceAPI
-from errors import Etcd3APIError, Etcd3Exception
-from errors import Etcd3StreamError
-from swagger_helper import SwaggerSpec
-from version import __version__
+from .apis import AuthAPI
+from .apis import ClusterAPI
+from .apis import KVAPI
+from .apis import LeaseAPI
+from .apis import MaintenanceAPI
+from .apis import WatchAPI
+from .errors import Etcd3APIError, Etcd3Exception
+from .errors import Etcd3StreamError
+from .swagger_helper import SwaggerSpec
+from .version import __version__
 
 rpc_swagger_json = os.path.join(os.path.dirname(__file__), 'rpc.swagger.json')
 
 swaggerSpec = SwaggerSpec(rpc_swagger_json)
+
+
+class ModelizedStreamResponse(object):
+    def __init__(self, method, resp, decode=True):
+        """
+        :param resp: Response
+        """
+        self.resp = resp
+        self.decode = decode
+        self.method = method
+
+    def close(self):
+        return self.resp.close()
+
+    def __iter__(self):
+        swpath = swaggerSpec.getPath(self.method)
+        respModel = swpath.post.responses._200.schema.getModel()
+        for data in iter_response(self.resp):
+            if not data:
+                continue
+            data = json.loads(data)
+            if data.get('error'):
+                # {"error":{"grpc_code":14,"http_code":503,"message":"rpc error: code = Unavailable desc = transport is closing","http_status":"Service Unavailable"}}
+                err = data.get('error')
+                raise Etcd3APIError(err.get('message'), code=err.get('code'), status=err.get('http_code'))
+            data = data.get('result', {})  # the real data is put under the key: 'result'
+            if self.decode:
+                data = Etcd3APIClient.decodeRPCResponse(self.method, data)
+            yield respModel(data)
 
 
 def iter_response(resp):
@@ -27,6 +62,8 @@ def iter_response(resp):
     buf = []
     bracket_flag = 0
     for c in resp.iter_content(chunk_size=1):
+        if six.PY3:
+            c = six.text_type(c, encoding='utf-8')
         buf.append(c)
         if c == '{':
             bracket_flag += 1
@@ -40,7 +77,7 @@ def iter_response(resp):
             raise Etcd3StreamError("Stream decode error", buf, resp)
 
 
-class Etcd3APIClient(MaintenanceAPI):
+class Etcd3APIClient(AuthAPI, ClusterAPI, KVAPI, LeaseAPI, MaintenanceAPI, WatchAPI):
     response_class = requests.models.Response
 
     def __init__(self, host='localhost', port=2379, protocol='http',
@@ -100,16 +137,7 @@ class Etcd3APIClient(MaintenanceAPI):
 
     @classmethod
     def modelizeStreamResponse(cls, method, resp, decode=True):
-        swpath = swaggerSpec.getPath(method)
-        respModel = swpath.post.responses._200.schema.getModel()
-        for data in iter_response(resp):
-            if not data:
-                continue
-            data = json.loads(data)
-            data = data.get('result', {})  # the real data is been put under the key: 'result'
-            if decode:
-                data = cls.decodeRPCResponse(method, data)
-            yield respModel(data)
+        return ModelizedStreamResponse(method, resp, decode)
 
     @classmethod
     def modelizeResponse(cls, method, resp, decode=True):
@@ -167,21 +195,3 @@ class Etcd3APIClient(MaintenanceAPI):
             except Etcd3Exception:
                 resp.close()
         return self.modelizeResponse(method, resp)
-
-
-if __name__ == '__main__':
-    client = Etcd3APIClient()
-    # print(client.call_rpc('/v3alpha/maintenance/status').json())
-    # print(client.call_rpc('/v3alpha/kv/put', {'key': 'foo', 'value': 'bar'}).json())
-    # print(client.call_rpc('/v3alpha/kv/put', {'key': 'foo', 'value': 'bar', 'prev_kv': True}).json())
-    # print(client.call_rpc('/v3alpha/kv/range', {'key': 'foo'}).json())
-    # print(client.call_rpc('/v3alpha/kv/range', {'key': 'foa'}).json())
-    print(client.status())
-    print(client.hash())
-    r = client.call_rpc('/v3alpha/watch', {'create_request': {'key': 'foo'}}, stream=True)
-    for i in r:
-        print(i)
-    try:
-        print(client.call_rpc('/v3alpha/kv/rang', {'key': 'foa'}).json())
-    except Exception as e:
-        print(e)

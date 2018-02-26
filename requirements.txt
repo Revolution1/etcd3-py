@@ -2,4 +2,3 @@ click==6.7
 enum34>=1.1.6
 six>=1.11.0
 requests>=2.10.0
-functools32>=3.2.3.post2

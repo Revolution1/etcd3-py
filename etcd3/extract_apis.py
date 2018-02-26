@@ -1,3 +1,7 @@
+"""
+Tool to generate python api code from swagger spec
+"""
+
 import inflection
 import jinja2
 
@@ -39,6 +43,11 @@ from .base import BaseAPI
 {% for tag in tags %}\
 from .{{ tag | lower }} import {{ tag | camelcase }}API
 {% endfor%}
+
+__all__ = [{% for tag in tags %}
+    '{{ tag | camelcase }}API',{% endfor %}
+    'BaseAPI'
+]
 '''
 
 API_FILE_TEMPLATE = '''\
@@ -61,7 +70,7 @@ class {{ tag | camelcase }}API(BaseAPI):
         {% endfor %}\
         {% for prop in params.properties %}\
         {% if prop._get('default', None) %}\
-        {% if prop._is_enum  %}{{ prop._name }}={{ prop._path[-1] }}.{{ prop.default }}, {% endif %}
+        {% if prop._is_enum %}{{ prop._name }}={{ prop._path[-1] }}.{{ prop.default }}, {% endif %}
         {% endif %}\
         {% endfor %}\
         {% endif %}\

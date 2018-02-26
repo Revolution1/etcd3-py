@@ -17,7 +17,7 @@ requirements = [
 ]
 
 setup_requirements = [
-    'pytest-runner',
+    # 'pytest-runner',
     # TODO(revolution1): put setup requirements (distutils extensions, etc.) here
 ]
 

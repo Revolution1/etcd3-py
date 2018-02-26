@@ -1,4 +1,4 @@
-from go_grpc_codes import codeText
+from .go_grpc_codes import codeText
 
 
 class Etcd3Exception(Exception):

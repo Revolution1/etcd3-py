@@ -1,5 +1,6 @@
 import base64
 import copy
+import io
 import json
 import keyword
 import os
@@ -7,14 +8,20 @@ import re
 from collections import OrderedDict
 
 import enum
-import functools32
 import six
+
+from .utils import lru_cache
 
 try:
     import yaml
     import yaml.resolver
 except ImportError:
     yaml = None
+
+if six.PY2:
+    file_types = file, io.IOBase
+else:
+    file_types = (io.IOBase,)
 
 
 def swagger_escape(s):
@@ -49,7 +56,7 @@ class SwaggerSpec(object):
     def __init__(self, spec):
         if isinstance(spec, dict):
             spec_content = spec
-        elif isinstance(spec, file):
+        elif isinstance(spec, file_types):
             pos = spec.tell()
             spec_content = spec.read()
             spec.seek(pos)
@@ -82,11 +89,12 @@ class SwaggerSpec(object):
                             yaml.resolver.BaseResolver.DEFAULT_MAPPING_TAG,
                             construct_mapping)
                         return yaml.load(stream, OrderedLoader)
+
                     self.spec = ordered_load(spec_content)
                 except Exception:
                     raise ValueError("Fail to load spec")
 
-    @functools32.lru_cache()
+    @lru_cache()
     def _ref(self, ref):
         if not ref.startswith('#/'):
             return None, None
@@ -108,7 +116,7 @@ class SwaggerSpec(object):
     def get(self, key, *args, **kwargs):
         return self.spec.get(key, *args, **kwargs)
 
-    @functools32.lru_cache()
+    @lru_cache()
     def getPath(self, key):
         """
         get a SwaggerPath instance of the path
@@ -124,7 +132,7 @@ class SwaggerSpec(object):
             node = self.ref(key)
         return node
 
-    @functools32.lru_cache()
+    @lru_cache()
     def getSchema(self, key):
         """
         get a SwaggerSchema instance of the schema
@@ -180,8 +188,24 @@ PROP_ENCODERS = {
     'int32': lambda x: int(x) if x is not None else x,
     'uint64': lambda x: abs(int(x)) if x is not None else x,
     'boolean': lambda x: bool(x) if x is not None else x,
-    'byte': lambda x: base64.b64encode(x) if x is not None else x
 }
+
+if six.PY3:
+    def _encode(data):
+        """Encode the given data using base-64
+        :param data:
+        :return: base-64 encoded string
+        """
+        if data is None:
+            return
+        if not isinstance(data, six.binary_type):
+            data = six.b(str(data))
+        return base64.b64encode(data).decode("utf-8")
+
+
+    PROP_ENCODERS['byte'] = _encode
+else:
+    PROP_ENCODERS['byte'] = lambda x: base64.b64encode(x) if x is not None else x
 
 PROP_DECODERS = {
     None: lambda x: x,
@@ -191,8 +215,25 @@ PROP_DECODERS = {
     'int32': lambda x: int(x) if x is not None else x,
     'uint64': lambda x: abs(int(x)) if x is not None else x,
     'boolean': lambda x: bool(x) if x is not None else x,
-    'byte': lambda x: base64.b64decode(x) if x is not None else x
+    'byte': lambda x: base64.b64decode(six.binary_type(x, encoding='utf-8')) if x is not None else x
 }
+
+if six.PY3:
+    def _decode(data):
+        """Decode the base-64 encoded string
+        :param data:
+        :return: decoded string
+        """
+        if data is None:
+            return
+        if not isinstance(data, six.binary_type):
+            data = six.b(str(data))
+        return base64.b64decode(data.decode("utf-8"))
+
+
+    PROP_DECODERS['byte'] = _decode
+else:
+    PROP_DECODERS['byte'] = lambda x: base64.b64decode(x) if x is not None else x
 
 SCHEMA_TYPES = ('string', 'number', 'integer', 'boolean', 'array', 'object')
 
@@ -331,7 +372,7 @@ class SwaggerNode(object):
     def _items(self):
         return six.iteritems(self._node)
 
-    @functools32.lru_cache()
+    @lru_cache()
     def __getattr__(self, key):
         try:
             original_key, n = _get_path(self._node, key)
