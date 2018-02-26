@@ -111,6 +111,9 @@ class Etcd3APIClient(AuthAPI, ClusterAPI, KVAPI, LeaseAPI, MaintenanceAPI, Watch
     def __set_conn_pool(self, pool_size):
         pass
 
+    def close(self):
+        return self.session.close()
+
     @property
     def baseurl(self):
         return '{}://{}:{}'.format(self.protocol, self.host, self.port)
