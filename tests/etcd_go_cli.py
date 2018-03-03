@@ -43,7 +43,7 @@ def find_executable(executable, path=None):
         return None
 
 
-etcdctl_path = find_executable('etcdctl')
+ETCDCTL_PATH = find_executable('etcdctl')
 
 
 def etcdctl(*args, **kwargs):
@@ -54,15 +54,23 @@ def etcdctl(*args, **kwargs):
     version = kwargs.get('version', 3)
 
     envs = {}
-    cmd = [etcdctl_path, '--endpoints', endpoint]
+    cmd = [ETCDCTL_PATH, '--endpoints', endpoint]
     if json:
         cmd.extend(['-w', 'json'])
     if version == 3:
         envs['ETCDCTL_API'] = '3'
     cmd.extend(args)
     p = Popen(cmd, stdout=PIPE, env=envs)
-    return p.communicate()[0]
+    out, err = p.communicate()
+    if not p.returncode == 0:
+        raise RuntimeError(err)
+    return out
 
+try:
+    if ETCDCTL_PATH and etcdctl('--dial-timeout=0.2s endpoint health'):
+        NO_ETCD_SERVICE = False
+except:
+    NO_ETCD_SERVICE = True
 
 if __name__ == '__main__':
     print(etcdctl('get foo'))

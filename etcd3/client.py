@@ -75,6 +75,8 @@ def iter_response(resp):
             yield s
         elif bracket_flag < 0:
             raise Etcd3StreamError("Stream decode error", buf, resp)
+    if buf:
+        raise Etcd3StreamError("Stream decode error", buf, resp)
 
 
 class Etcd3APIClient(AuthAPI, ClusterAPI, KVAPI, LeaseAPI, MaintenanceAPI, WatchAPI):
@@ -109,7 +111,10 @@ class Etcd3APIClient(AuthAPI, ClusterAPI, KVAPI, LeaseAPI, MaintenanceAPI, Watch
         self.token = token
 
     def __set_conn_pool(self, pool_size):
-        pass
+        from requests.adapters import HTTPAdapter
+        adapter = HTTPAdapter(pool_connections=pool_size, pool_maxsize=pool_size)
+        self.session.mount('http://', adapter)
+        self.session.mount('https://', adapter)
 
     def close(self):
         return self.session.close()
