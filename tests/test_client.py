@@ -1,5 +1,4 @@
 import pytest
-import six
 
 from etcd3.client import Etcd3APIClient
 from etcd3.errors import Etcd3APIError

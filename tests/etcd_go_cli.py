@@ -62,15 +62,17 @@ def etcdctl(*args, **kwargs):
     cmd.extend(args)
     p = Popen(cmd, stdout=PIPE, env=envs)
     out, err = p.communicate()
-    if not p.returncode == 0:
+    if p.returncode != 0:
         raise RuntimeError(err)
     return out
 
+
+NO_ETCD_SERVICE = True
 try:
     if ETCDCTL_PATH and etcdctl('--dial-timeout=0.2s endpoint health'):
         NO_ETCD_SERVICE = False
 except:
-    NO_ETCD_SERVICE = True
+    pass
 
 if __name__ == '__main__':
     print(etcdctl('get foo'))
