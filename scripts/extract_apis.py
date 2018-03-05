@@ -88,16 +88,20 @@ class {{ tag | camelcase }}API(BaseAPI):
 {% endfor %}
 '''
 
-GENERATED_APIS_DIR = './apis_generated'
-
 if __name__ == '__main__':
     import os
+    import sys
+
+    sys.path.append(os.path.dirname(os.path.dirname(__file__)))
+
     import jinja2
-    from swagger_helper import SwaggerSpec
+    from etcd3.swagger_helper import SwaggerSpec
     from yapf.yapflib.yapf_api import FormatCode
     from isort import SortImports
 
-    rpc_swagger_json = os.path.join(os.path.dirname(__file__), 'rpc.swagger.json')
+    GENERATED_APIS_DIR = os.path.join(os.path.dirname(__file__), '../etcd3/apis_generated')
+
+    rpc_swagger_json = os.path.join(os.path.dirname(__file__), '../etcd3/rpc.swagger.json')
     swaggerSpec = SwaggerSpec(rpc_swagger_json)
 
     api_tpl = env.from_string(API_FILE_TEMPLATE)

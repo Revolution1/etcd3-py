@@ -4,7 +4,7 @@ from etcd3.client import Etcd3APIClient
 from etcd3.errors import Etcd3APIError
 from .envs import protocol, host, port
 from .etcd_go_cli import etcdctl, NO_ETCD_SERVICE
-from .mocks import fake_post
+from .mocks import fake_request
 
 
 @pytest.fixture(scope='session')
@@ -57,7 +57,7 @@ def test_patched_stream(client, monkeypatch):
         b'{"result": {"header": {"raft_term": 7, "member_id": 128088275939295631, "cluster_id": 11588568905070377092, "revision": 379}, "events": [{"kv": {"mod_revision": 379, "value": "dGVzdF92YWx1ZQ==", "create_revision": 379, "version": 1, "key": "dGVzdF9rZXk="}}]}}' \
         b'{"result": {"header": {"raft_term": 7, "member_id": 128088275939295631, "cluster_id": 11588568905070377092, "revision": 380}, "events": [{"kv": {"mod_revision": 380, "value": "dGVzdF92YWx1ZQ==", "create_revision": 379, "version": 2, "key": "dGVzdF9rZXk="}}]}}' \
         b'{"result": {"header": {"raft_term": 7, "member_id": 128088275939295631, "cluster_id": 11588568905070377092, "revision": 381}, "events": [{"kv": {"mod_revision": 381, "value": "dGVzdF92YWx1ZQ==", "create_revision": 379, "version": 3, "key": "dGVzdF9rZXk="}}]}}'
-    post = fake_post(200, s, client.response_class)
+    post = fake_request(200, s, client.response_class)
     monkeypatch.setattr(client.session, 'post', post)
     r = client.call_rpc('/v3alpha/watch', {'create_request': {'key': 'test_key'}}, stream=True)
     times = 3
@@ -78,7 +78,7 @@ def test_patched_request_and_model(client, monkeypatch):
     s = b'{"header":{"cluster_id":11588568905070377092,"member_id":128088275939295631,"revision":3,"raft_term":2},' \
         b'"kvs":[{"key":"dGVzdF9rZXk=","create_revision":3,"mod_revision":3,"version":1,"value":"dGVzdF92YWx1ZQ=="}],' \
         b'"count":1}'
-    post = fake_post(200, s, client.response_class)
+    post = fake_request(200, s, client.response_class)
     monkeypatch.setattr(client.session, 'post', post)
     result = client.call_rpc('/v3alpha/kv/range', {'key': 'test_key'})
     assert post.call_args[1]['json']['key'] == 'dGVzdF9rZXk='
@@ -87,7 +87,7 @@ def test_patched_request_and_model(client, monkeypatch):
 
 
 def test_patched_request_exception(client, monkeypatch):
-    post = fake_post(404, 'Not Found', client.response_class)
+    post = fake_request(404, 'Not Found', client.response_class)
     monkeypatch.setattr(client.session, 'post', post)
     with pytest.raises(Etcd3APIError, match=r".*'Not Found'.*"):
         client.call_rpc('/v3alpha/kv/rag', {})  # non exist path

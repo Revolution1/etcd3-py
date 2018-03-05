@@ -7,6 +7,7 @@ from six.moves import urllib_parse
 
 from .apis import AuthAPI
 from .apis import ClusterAPI
+from .apis import ExtraAPI
 from .apis import KVAPI
 from .apis import LeaseAPI
 from .apis import MaintenanceAPI
@@ -79,7 +80,7 @@ def iter_response(resp):
         raise Etcd3StreamError("Stream decode error", buf, resp)
 
 
-class Etcd3APIClient(AuthAPI, ClusterAPI, KVAPI, LeaseAPI, MaintenanceAPI, WatchAPI):
+class Etcd3APIClient(AuthAPI, ClusterAPI, KVAPI, LeaseAPI, MaintenanceAPI, WatchAPI, ExtraAPI):
     response_class = requests.models.Response
 
     def __init__(self, host='localhost', port=2379, protocol='http',
@@ -158,7 +159,7 @@ class Etcd3APIClient(AuthAPI, ClusterAPI, KVAPI, LeaseAPI, MaintenanceAPI, Watch
         return respModel(resp)
 
     @staticmethod
-    def raise_for_status(resp):
+    def _raise_for_status(resp):
         status = resp.status_code
         if status < 400:
             return
@@ -171,6 +172,26 @@ class Etcd3APIClient(AuthAPI, ClusterAPI, KVAPI, LeaseAPI, MaintenanceAPI, Watch
             error = data.get('error')
             code = data.get('code')
         raise Etcd3APIError(error, code, status, resp)
+
+    def _get(self, url, **kwargs):
+        r"""Sends a GET request. Returns :class:`Response` object.
+
+        :param url: URL for the new :class:`Request` object.
+        :param \*\*kwargs: Optional arguments that ``request`` takes.
+        :rtype: requests.Response
+        """
+        return self.session.get(url, **kwargs)
+
+    def _post(self, url, data=None, json=None, **kwargs):
+        r"""Sends a POST request. Returns :class:`Response` object.
+
+        :param url: URL for the new :class:`Request` object.
+        :param data: (optional) Dictionary, bytes, or file-like object to send in the body of the :class:`Request`.
+        :param json: (optional) json to send in the body of the :class:`Request`.
+        :param \*\*kwargs: Optional arguments that ``request`` takes.
+        :rtype: requests.Response
+        """
+        return self.session.post(url, data=data, json=json, **kwargs)
 
     def call_rpc(self, method, data=None, stream=False, encode=True, raw=False, **kwargs):
         """
@@ -193,8 +214,8 @@ class Etcd3APIClient(AuthAPI, ClusterAPI, KVAPI, LeaseAPI, MaintenanceAPI, Watch
         kwargs.setdefault('headers', {}).update(self.headers)
         if encode:
             data = self.encodeRPCRequest(method, data)
-        resp = self.session.post(self._url(method), json=data or {}, stream=stream, **kwargs)
-        self.raise_for_status(resp)
+        resp = self._post(self._url(method), json=data or {}, stream=stream, **kwargs)
+        self._raise_for_status(resp)
         if raw:
             return resp
         if stream:

@@ -10,7 +10,7 @@ from collections import OrderedDict
 import enum
 import six
 
-from .utils import lru_cache
+from .utils import memoized
 
 try:
     import yaml
@@ -94,7 +94,7 @@ class SwaggerSpec(object):
                 except Exception:
                     raise ValueError("Fail to load spec")
 
-    @lru_cache()
+    @memoized
     def _ref(self, ref):
         if not ref.startswith('#/'):
             return None, None
@@ -116,7 +116,7 @@ class SwaggerSpec(object):
     def get(self, key, *args, **kwargs):
         return self.spec.get(key, *args, **kwargs)
 
-    @lru_cache()
+    @memoized
     def getPath(self, key):
         """
         get a SwaggerPath instance of the path
@@ -132,7 +132,7 @@ class SwaggerSpec(object):
             node = self.ref(key)
         return node
 
-    @lru_cache()
+    @memoized
     def getSchema(self, key):
         """
         get a SwaggerSchema instance of the schema
@@ -372,7 +372,7 @@ class SwaggerNode(object):
     def _items(self):
         return six.iteritems(self._node)
 
-    @lru_cache()
+    @memoized
     def __getattr__(self, key):
         try:
             original_key, n = _get_path(self._node, key)

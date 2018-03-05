@@ -12,6 +12,28 @@ class AlarmRequestAlarmAction(enum.Enum):
     DEACTIVATE = 'DEACTIVATE'
 
 
+class CompareCompareResult(enum.Enum):
+    """
+    ref: #/definitions/CompareCompareResult
+    default: EQUAL
+    """
+    EQUAL = 'EQUAL'
+    GREATER = 'GREATER'
+    LESS = 'LESS'
+    NOT_EQUAL = 'NOT_EQUAL'
+
+
+class CompareCompareTarget(enum.Enum):
+    """
+    ref: #/definitions/CompareCompareTarget
+    default: VERSION
+    """
+    VERSION = 'VERSION'
+    CREATE = 'CREATE'
+    MOD = 'MOD'
+    VALUE = 'VALUE'
+
+
 class EventEventType(enum.Enum):
     """
     ref: #/definitions/EventEventType
@@ -19,6 +41,16 @@ class EventEventType(enum.Enum):
     """
     PUT = 'PUT'
     DELETE = 'DELETE'
+
+
+class RangeRequestSortOrder(enum.Enum):
+    """
+    ref: #/definitions/RangeRequestSortOrder
+    default: NONE
+    """
+    NONE = 'NONE'
+    ASCEND = 'ASCEND'
+    DESCEND = 'DESCEND'
 
 
 class RangeRequestSortTarget(enum.Enum):
@@ -33,15 +65,13 @@ class RangeRequestSortTarget(enum.Enum):
     VALUE = 'VALUE'
 
 
-class CompareCompareTarget(enum.Enum):
+class WatchCreateRequestFilterType(enum.Enum):
     """
-    ref: #/definitions/CompareCompareTarget
-    default: VERSION
+    ref: #/definitions/WatchCreateRequestFilterType
+    default: NOPUT
     """
-    VERSION = 'VERSION'
-    CREATE = 'CREATE'
-    MOD = 'MOD'
-    VALUE = 'VALUE'
+    NOPUT = 'NOPUT'
+    NODELETE = 'NODELETE'
 
 
 class authpbPermissionType(enum.Enum):
@@ -54,27 +84,6 @@ class authpbPermissionType(enum.Enum):
     READWRITE = 'READWRITE'
 
 
-class CompareCompareResult(enum.Enum):
-    """
-    ref: #/definitions/CompareCompareResult
-    default: EQUAL
-    """
-    EQUAL = 'EQUAL'
-    GREATER = 'GREATER'
-    LESS = 'LESS'
-    NOT_EQUAL = 'NOT_EQUAL'
-
-
-class RangeRequestSortOrder(enum.Enum):
-    """
-    ref: #/definitions/RangeRequestSortOrder
-    default: NONE
-    """
-    NONE = 'NONE'
-    ASCEND = 'ASCEND'
-    DESCEND = 'DESCEND'
-
-
 class etcdserverpbAlarmType(enum.Enum):
     """
     ref: #/definitions/etcdserverpbAlarmType
@@ -84,23 +93,14 @@ class etcdserverpbAlarmType(enum.Enum):
     NOSPACE = 'NOSPACE'
 
 
-class WatchCreateRequestFilterType(enum.Enum):
-    """
-    ref: #/definitions/WatchCreateRequestFilterType
-    default: NOPUT
-    """
-    NOPUT = 'NOPUT'
-    NODELETE = 'NODELETE'
-
-
 __all__ = [
     'AlarmRequestAlarmAction',
-    'EventEventType',
-    'RangeRequestSortTarget',
-    'CompareCompareTarget',
-    'authpbPermissionType',
     'CompareCompareResult',
+    'CompareCompareTarget',
+    'EventEventType',
     'RangeRequestSortOrder',
-    'etcdserverpbAlarmType',
+    'RangeRequestSortTarget',
     'WatchCreateRequestFilterType',
+    'authpbPermissionType',
+    'etcdserverpbAlarmType',
 ]
