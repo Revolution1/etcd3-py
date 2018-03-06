@@ -3,10 +3,10 @@ etcd3-py
 ========
 
 
-.. image:: https://img.shields.io/pypi/v/etcd3.svg
+.. image:: https://img.shields.io/pypi/v/etcd3-py.svg
         :target: https://pypi.python.org/pypi/etcd3-py
 
-.. image:: https://img.shields.io/travis/Revolution1/etcd3.svg
+.. image:: https://travis-ci.org/Revolution1/etcd3-py.svg?branch=master
         :target: https://travis-ci.org/Revolution1/etcd3-py
 
 .. image:: https://readthedocs.org/projects/etcd3-py/badge/?version=latest
