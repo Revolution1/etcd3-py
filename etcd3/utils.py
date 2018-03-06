@@ -155,11 +155,11 @@ def memoize_in_object(fn):
     (not reevaluated).
     """
 
+    fn.cache = {}
+
     @functools.wraps(fn)
     def _memoize(self, *args, **kwargs):
-        if not hasattr(self, '__memoize_cache'):
-            setattr(self, '__memoize_cache', {})
-        cache = getattr(self, '__memoize_cache')
+        cache = fn.cache.setdefault(self, {})
         kwargs.update(dict(zip(getargspec(fn).args, itertools.chain([self], args))))
         key = tuple(kwargs.get(k, None) for k in getargspec(fn).args if k != 'self')
         if not isinstance(key, Hashable):
