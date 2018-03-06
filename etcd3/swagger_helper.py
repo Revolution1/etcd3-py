@@ -10,7 +10,7 @@ from collections import OrderedDict
 import enum
 import six
 
-from .utils import memoized
+from .utils import memoize_in_object
 
 try:
     import yaml
@@ -25,10 +25,23 @@ else:
 
 
 def swagger_escape(s):
+    """
+    / and ~ are special characters in JSON Pointers,
+    and need to be escaped when used literally (for example, in path names).
+
+    https://swagger.io/docs/specification/using-ref/#escape
+    """
     return s.replace('~', '~0').replace('/', '~1')
 
 
 def _format_path(path):
+    """
+    escape path to make it possible to 'dot' a attribute in python
+
+    for example:
+
+    >>> spec.paths['/v3alpha/auth/disable'] == spec.paths.v3alpha_auth_disable
+    """
     if isinstance(path, (int, float)) or path.isdigit():
         return '_%s' % path
     if keyword.iskeyword(path):
@@ -100,7 +113,7 @@ class SwaggerSpec(object):
                 except Exception:
                     raise ValueError("Fail to load spec")
 
-    @memoized
+    @memoize_in_object
     def _ref(self, ref):
         if not ref.startswith('#/'):
             return None, None
@@ -121,6 +134,7 @@ class SwaggerSpec(object):
         :return: SwaggerNode
 
         example:
+
         >>> spec.ref('#/definitions/etcdserverpbAlarmResponse')
         SwaggerSchema(ref='#/definitions/etcdserverpbAlarmResponse')
         """
@@ -131,16 +145,16 @@ class SwaggerSpec(object):
 
     def get(self, key, *args, **kwargs):
         """
-        equivariant to spec.get(key)
+        equivariant to self.spec.get(key)
         """
         return self.spec.get(key, *args, **kwargs)
 
-    @memoized
+    @memoize_in_object
     def getPath(self, key):
         """
         get a SwaggerPath instance of the path
 
-        :type key:SwaggerNode or str
+        :type key: SwaggerNode or str
         :param key: receive a SwaggerNode or a $ref string of schema
         :rtype: SwaggerNode
         """
@@ -152,12 +166,12 @@ class SwaggerSpec(object):
             node = self.ref(key)
         return node
 
-    @memoized
+    @memoize_in_object
     def getSchema(self, key):
         """
         get a SwaggerSchema instance of the schema
 
-        :type key:SwaggerNode or str
+        :type key: SwaggerNode or str
         :param key: receive a SwaggerNode or a $ref string of schema
         :rtype: SwaggerNode
         """
@@ -173,7 +187,7 @@ class SwaggerSpec(object):
         """
         get a Enum instance of the schema
 
-        :type key:SwaggerNode or str
+        :type key: SwaggerNode or str
         :param key: receive a SwaggerNode or a $ref string of schema
         :rtype: SwaggerNode
         """
@@ -403,7 +417,7 @@ class SwaggerNode(object):
     def _items(self):
         return six.iteritems(self._node)
 
-    @memoized
+    @memoize_in_object
     def __getattr__(self, key):
         try:
             original_key, n = _get_path(self._node, key)

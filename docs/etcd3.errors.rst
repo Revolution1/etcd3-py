@@ -1,4 +1,4 @@
-etcd3\.errors package
+etcd3\.errors
 =====================
 
 etcd3\.errors\.errors

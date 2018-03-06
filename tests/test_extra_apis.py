@@ -1,6 +1,6 @@
 import pytest
 
-from etcd3.client import Etcd3APIClient
+from etcd3.client import Client
 from .mocks import fake_request
 from .envs import protocol, host, port
 
@@ -10,7 +10,7 @@ def client():
     """
     init Etcd3Client, close its connection-pool when teardown
     """
-    c = Etcd3APIClient(host, port, protocol)
+    c = Client(host, port, protocol)
     yield c
     c.close()
 

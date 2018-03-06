@@ -1,5 +1,7 @@
 import functools
+import itertools
 from collections import namedtuple, OrderedDict, Hashable
+from inspect import getargspec
 from threading import Lock
 
 import six
@@ -11,6 +13,13 @@ _CacheInfo = namedtuple("CacheInfo", "hits misses maxsize currsize")
 
 if six.PY2:
     class OrderedDictEx(OrderedDict):
+        """
+        On python2, this is a OrderedDict with extended method 'move_to_end'
+        that is compatible with collections.OrderedDict in python3
+
+        On python3 it is collections.OrderedDict
+        """
+
         def move_to_end(self, key):
             """
             faster than d[k] = d.pop(k)
@@ -115,36 +124,53 @@ def lru_cache(maxsize=100):
     return decorating_function
 
 
-class memoized(object):
-    '''Decorator. Caches a function's return value each time it is called.
+def memoize(fn):
+    '''
+    Decorator. Caches a function's return value each time it is called.
     If called later with the same arguments, the cached value is returned
     (not reevaluated).
     '''
+    cache = fn.cache = {}
+    fn.invalidate_cache = lambda: cache.clear()
 
-    def __init__(self, func):
-        self.func = func
-        self.__doc__ = func.__doc__
-        self.cache = {}
-
-    def __call__(self, *args):
-        if not isinstance(args, Hashable):
+    @functools.wraps(fn)
+    def _memoized(*args, **kwargs):
+        kwargs.update(dict(zip(getargspec(fn).args, args)))
+        key = tuple(kwargs.get(k, None) for k in getargspec(fn).args if k != 'self')
+        if not isinstance(key, Hashable):
             # uncacheable. a list, for instance.
             # better to not cache than blow up.
-            return self.func(*args)
-        if args in self.cache:
-            return self.cache[args]
-        else:
-            value = self.func(*args)
-            self.cache[args] = value
-            return value
+            return fn(**kwargs)
+        if key not in cache:
+            cache[key] = fn(**kwargs)
+        return cache[key]
 
-    def __repr__(self):
-        '''Return the function's docstring.'''
-        return self.func.__doc__
+    return _memoized
 
-    def __get__(self, obj, objtype):
-        '''Support instance methods.'''
-        return functools.partial(self.__call__, obj)
+
+def memoize_in_object(fn):
+    """
+    Decorator. Caches a method's return value each time it is called, in the object instance
+    If called later with the same arguments, the cached value is returned
+    (not reevaluated).
+    """
+
+    @functools.wraps(fn)
+    def _memoize(self, *args, **kwargs):
+        if not hasattr(self, '__memoize_cache'):
+            setattr(self, '__memoize_cache', {})
+        cache = getattr(self, '__memoize_cache')
+        kwargs.update(dict(zip(getargspec(fn).args, itertools.chain([self], args))))
+        key = tuple(kwargs.get(k, None) for k in getargspec(fn).args if k != 'self')
+        if not isinstance(key, Hashable):
+            # uncacheable. a list, for instance.
+            # better to not cache than blow up.
+            return fn(**kwargs)
+        if key not in cache:
+            cache[key] = fn(**kwargs)
+        return cache[key]
+
+    return _memoize
 
 
 if __name__ == '__main__':

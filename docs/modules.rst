@@ -33,14 +33,6 @@ etcd3\.models
     :undoc-members:
     :show-inheritance:
 
-etcd3\.etcd3
--------------------
-
-.. automodule:: etcd3.etcd3
-    :members:
-    :undoc-members:
-    :show-inheritance:
-
 etcd3\.swagger\_helper
 -----------------------------
 

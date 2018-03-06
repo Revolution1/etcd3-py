@@ -1,6 +1,6 @@
 import pytest
 
-from etcd3.client import Etcd3APIClient
+from etcd3.client import Client
 from etcd3.errors import Etcd3APIError
 from .envs import protocol, host, port
 from .etcd_go_cli import etcdctl, NO_ETCD_SERVICE
@@ -12,7 +12,7 @@ def client():
     """
     init Etcd3Client, close its connection-pool when teardown
     """
-    c = Etcd3APIClient(host, port, protocol)
+    c = Client(host, port, protocol)
     yield c
     c.close()
 

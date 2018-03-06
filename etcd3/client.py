@@ -1,3 +1,7 @@
+"""
+synchronous client
+"""
+
 import json
 import os
 
@@ -53,7 +57,7 @@ class ModelizedStreamResponse(object):
                 raise Etcd3APIError(err.get('message'), code=err.get('code'), status=err.get('http_code'))
             data = data.get('result', {})  # the real data is put under the key: 'result'
             if self.decode:
-                data = Etcd3APIClient.decodeRPCResponse(self.method, data)
+                data = Client.decodeRPCResponse(self.method, data)
             yield respModel(data)
 
 
@@ -88,7 +92,7 @@ def iter_response(resp):
         raise Etcd3StreamError("Stream decode error", buf, resp)
 
 
-class Etcd3APIClient(AuthAPI, ClusterAPI, KVAPI, LeaseAPI, MaintenanceAPI, WatchAPI, ExtraAPI):
+class Client(AuthAPI, ClusterAPI, KVAPI, LeaseAPI, MaintenanceAPI, WatchAPI, ExtraAPI):
     response_class = requests.models.Response
 
     def __init__(self, host='localhost', port=2379, protocol='http',
