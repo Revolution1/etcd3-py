@@ -1,7 +1,7 @@
 import pytest
 
 from etcd3.client import Etcd3APIClient
-from mocks import fake_request
+from .mocks import fake_request
 from .envs import protocol, host, port
 
 
