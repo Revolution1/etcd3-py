@@ -53,7 +53,13 @@ def _get_path(node, key, default=None):
 
 
 class SwaggerSpec(object):
+    """
+    Parse the swagger spec of gRPC-JSON-Gateway to object tree
+    """
     def __init__(self, spec):
+        """
+        :param spec: dict or json string or yaml string
+        """
         if isinstance(spec, dict):
             spec_content = spec
         elif isinstance(spec, file_types):
@@ -108,18 +114,32 @@ class SwaggerSpec(object):
             return rt, path
 
     def ref(self, ref_path):
+        """
+        get the node object from absolute reference
+
+        :param ref_path: str
+        :return: SwaggerNode
+
+        example:
+        >>> spec.ref('#/definitions/etcdserverpbAlarmResponse')
+        SwaggerSchema(ref='#/definitions/etcdserverpbAlarmResponse')
+        """
         ref, path = self._ref(ref_path)
         if not isinstance(ref, dict):
             return ref
         return SwaggerNode(self, ref, path, self)
 
     def get(self, key, *args, **kwargs):
+        """
+        equivariant to spec.get(key)
+        """
         return self.spec.get(key, *args, **kwargs)
 
     @memoized
     def getPath(self, key):
         """
         get a SwaggerPath instance of the path
+
         :type key:SwaggerNode or str
         :param key: receive a SwaggerNode or a $ref string of schema
         :rtype: SwaggerNode
@@ -136,6 +156,7 @@ class SwaggerSpec(object):
     def getSchema(self, key):
         """
         get a SwaggerSchema instance of the schema
+
         :type key:SwaggerNode or str
         :param key: receive a SwaggerNode or a $ref string of schema
         :rtype: SwaggerNode
@@ -151,6 +172,7 @@ class SwaggerSpec(object):
     def getEnum(self, key):
         """
         get a Enum instance of the schema
+
         :type key:SwaggerNode or str
         :param key: receive a SwaggerNode or a $ref string of schema
         :rtype: SwaggerNode
@@ -220,7 +242,9 @@ PROP_DECODERS = {
 
 if six.PY3:
     def _decode(data):
-        """Decode the base-64 encoded string
+        """
+        Decode the base-64 encoded string
+
         :param data:
         :return: decoded string
         """
@@ -239,6 +263,13 @@ SCHEMA_TYPES = ('string', 'number', 'integer', 'boolean', 'array', 'object')
 
 
 class SwaggerNode(object):
+    """
+    the node of swagger_spec object
+
+    can represent a path, a schema or a ordinary node
+
+    as a schema, it can generate a model object of the definition, decode or encode the payload
+    """
     def __init__(self, root, node, path, parent=None, name=None):
         self._root = root
         self._node = node

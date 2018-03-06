@@ -127,7 +127,7 @@ class KVAPI(BaseAPI):
             greater mod revisions will be filtered away.
         :type min_create_revision: int
         :param min_create_revision: min_create_revision is the lower bound for returned key create revisions; all keys with
-            lesser create trevisions will be filtered away.
+            lesser create revisions will be filtered away.
         :type max_create_revision: int
         :param max_create_revision: max_create_revision is the upper bound for returned key create revisions; all keys with
             greater create revisions will be filtered away.

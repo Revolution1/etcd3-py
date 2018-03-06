@@ -123,6 +123,7 @@ class memoized(object):
 
     def __init__(self, func):
         self.func = func
+        self.__doc__ = func.__doc__
         self.cache = {}
 
     def __call__(self, *args):

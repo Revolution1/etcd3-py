@@ -23,6 +23,9 @@ swaggerSpec = SwaggerSpec(rpc_swagger_json)
 
 
 class ModelizedStreamResponse(object):
+    """
+    Model of a stream response
+    """
     def __init__(self, method, resp, decode=True):
         """
         :param resp: Response
@@ -32,6 +35,9 @@ class ModelizedStreamResponse(object):
         self.method = method
 
     def close(self):
+        """
+        close the stream
+        """
         return self.resp.close()
 
     def __iter__(self):
@@ -56,7 +62,9 @@ def iter_response(resp):
     yield response content by every json object
     we don't yield by line, because the content of etcd's gRPC-JSON-Gateway stream response
     does not have a delimiter between each object by default. (only one line)
+
     https://github.com/grpc-ecosystem/grpc-gateway/pull/497/files
+
     :param resp: Response
     :return: dict
     """
@@ -118,16 +126,23 @@ class Etcd3APIClient(AuthAPI, ClusterAPI, KVAPI, LeaseAPI, MaintenanceAPI, Watch
         self.session.mount('https://', adapter)
 
     def close(self):
+        """
+        close all connections in connection pool
+        """
         return self.session.close()
 
     @property
     def baseurl(self):
+        """
+        :return: baseurl from protocol, host, self
+        """
         return '{}://{}:{}'.format(self.protocol, self.host, self.port)
 
     def _url(self, method):
         return urllib_parse.urljoin(self.baseurl, method)
 
-    def encodeRPCRequest(self, method, data):
+    @classmethod
+    def encodeRPCRequest(cls, method, data):
         swpath = swaggerSpec.getPath(method)
         if not swpath:
             return data
@@ -174,7 +189,8 @@ class Etcd3APIClient(AuthAPI, ClusterAPI, KVAPI, LeaseAPI, MaintenanceAPI, Watch
         raise Etcd3APIError(error, code, status, resp)
 
     def _get(self, url, **kwargs):
-        r"""Sends a GET request. Returns :class:`Response` object.
+        r"""
+        Sends a GET request. Returns :class:`Response` object.
 
         :param url: URL for the new :class:`Request` object.
         :param \*\*kwargs: Optional arguments that ``request`` takes.
@@ -183,7 +199,8 @@ class Etcd3APIClient(AuthAPI, ClusterAPI, KVAPI, LeaseAPI, MaintenanceAPI, Watch
         return self.session.get(url, **kwargs)
 
     def _post(self, url, data=None, json=None, **kwargs):
-        r"""Sends a POST request. Returns :class:`Response` object.
+        r"""
+        Sends a POST request. Returns :class:`Response` object.
 
         :param url: URL for the new :class:`Request` object.
         :param data: (optional) Dictionary, bytes, or file-like object to send in the body of the :class:`Request`.
@@ -196,6 +213,7 @@ class Etcd3APIClient(AuthAPI, ClusterAPI, KVAPI, LeaseAPI, MaintenanceAPI, Watch
     def call_rpc(self, method, data=None, stream=False, encode=True, raw=False, **kwargs):
         """
         call ETCDv3 RPC and return response object
+
         :type method: str
         :param method: the rpc method, which is a path of RESTful API
         :type data: dict

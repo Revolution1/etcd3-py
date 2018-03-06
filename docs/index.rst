@@ -4,7 +4,7 @@ Welcome to etcd3-py's documentation!
 Contents:
 
 .. toctree::
-   :maxdepth: 2
+   :maxdepth: 3
 
    readme
    installation

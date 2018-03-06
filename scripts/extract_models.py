@@ -6,6 +6,7 @@ import enum
 class {{e._path | last}}(enum.Enum):
     """
     ref: {{ e._ref }}
+    
     default: {{ e.default }}
     """
     {% for prop in e.enum %}{{ prop.name }} = '{{ prop.value }}'
