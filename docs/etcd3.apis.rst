@@ -1,6 +1,3 @@
-etcd3\.apis
-===================
-
 etcd3\.apis\.auth
 ------------------------
 
@@ -21,14 +18,6 @@ etcd3\.apis\.cluster
 ---------------------------
 
 .. automodule:: etcd3.apis.cluster
-    :members:
-    :undoc-members:
-    :show-inheritance:
-
-etcd3\.apis\.extra
--------------------------
-
-.. automodule:: etcd3.apis.extra
     :members:
     :undoc-members:
     :show-inheritance:
@@ -61,6 +50,14 @@ etcd3\.apis\.watch
 -------------------------
 
 .. automodule:: etcd3.apis.watch
+    :members:
+    :undoc-members:
+    :show-inheritance:
+
+etcd3\.apis\.extra
+-------------------------
+
+.. automodule:: etcd3.apis.extra
     :members:
     :undoc-members:
     :show-inheritance:

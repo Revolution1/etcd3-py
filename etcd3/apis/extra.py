@@ -9,6 +9,7 @@ class ExtraAPI(BaseAPI):
     def version(self):
         """
         get the version of etcdserver and etcdcluster
+
         :return: EtcdVersion
         """
         resp = self._get(self._url('/version'))
@@ -18,6 +19,7 @@ class ExtraAPI(BaseAPI):
     def metrics_raw(self):
         """
         get the raw /metrics text
+
         :return: str
         """
         resp = self._get(self._url('/metrics'))

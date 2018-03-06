@@ -69,6 +69,7 @@ class SwaggerSpec(object):
     """
     Parse the swagger spec of gRPC-JSON-Gateway to object tree
     """
+
     def __init__(self, spec):
         """
         :param spec: dict or json string or yaml string
@@ -284,6 +285,7 @@ class SwaggerNode(object):
 
     as a schema, it can generate a model object of the definition, decode or encode the payload
     """
+
     def __init__(self, root, node, path, parent=None, name=None):
         self._root = root
         self._node = node
@@ -403,6 +405,30 @@ class SwaggerNode(object):
             self.encode = encode
             self.decode = decode
             self.getModel = getModel
+
+    def encode(self, data):
+        """
+        encode the data to as the schema defined
+
+        :param data: data to encode
+        :return: encoded data
+        """
+        raise NotImplementedError
+
+    def decode(self, data):
+        """
+        decode the data to as the schema defined
+
+        :param data: data to decode
+        :return: decoded data
+        """
+        raise NotImplementedError
+
+    def getModel(self):
+        """
+        get the model of the schema
+        """
+        raise NotImplementedError
 
     @property
     def _ref(self):
