@@ -31,18 +31,19 @@ Python client for etcd v3 (Using grpc-json-gateway)
 Features
 --------
 
-- [ ] support python2 and python3.5+
-- [ ] sync client based on requests
-- [ ] async client based on aiohttp
-- [ ] support etcd3 gRPC-JSON-Gateway including stream
-- [ ] response modelizing based on etcd3's swagger spec
-- [ ] generate code from swagger spec
-- [ ] support APIs
-    - [ ] KV
-    - [ ] Watch
-    - [ ] Cluster
-    - [ ] Lease
-    - [ ] Maintenance
-    - [ ] Auth
-    - [ ] Extra APIs
-- [ ] auto unit testing
+* [ ] support python2 and python3.5+
+* [ ] sync client based on requests
+* [ ] async client based on aiohttp
+* [ ] support etcd3 gRPC-JSON-Gateway including stream
+* [ ] response modelizing based on etcd3's swagger spec
+* [ ] generate code from swagger spec
+* [ ] auto unit testing
+* [ ] support APIs
+
+    * [ ] KV
+    * [ ] Watch
+    * [ ] Cluster
+    * [ ] Lease
+    * [ ] Maintenance
+    * [ ] Auth
+    * [ ] Extra APIs
