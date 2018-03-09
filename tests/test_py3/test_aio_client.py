@@ -1,3 +1,5 @@
+import asyncio
+
 import pytest
 
 from etcd3 import AioClient
@@ -7,13 +9,33 @@ from ..etcd_go_cli import etcdctl
 
 
 @pytest.fixture
-async def aio_client(event_loop):
+def event_loop():
+    """Create an instance of the default event loop for each test case."""
+    policy = asyncio.get_event_loop_policy()
+    res = policy.new_event_loop()
+    asyncio.set_event_loop(res)
+    res._close = res.close
+    res.close = lambda: None
+    return res
+
+
+@pytest.fixture
+async def aio_client(event_loop, request):
     """
     init Etcd3Client, close its connection-pool when teardown
     """
 
-    with AioClient(host, port, protocol) as c:
-        return c
+    c = AioClient(host, port, protocol)
+
+    def teardown():
+        async def _t():
+            await c.close()
+
+        event_loop.run_until_complete(_t())
+        event_loop._close()
+
+    request.addfinalizer(teardown)
+    return c
 
 
 @pytest.mark.skipif(NO_ETCD_SERVICE, reason="no etcd service available")

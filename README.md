@@ -9,8 +9,6 @@ etcd3-py (Developing)
 
 Python client for etcd v3 (Using grpc-json-gateway)
 
-For full documentation please read [this](http://etcd3-py.readthedocs.io/en/latest/?badge=latest)
-
 * Free software: Apache Software License 2.0
 * Documentation: https://etcd3.readthedocs.io.
 
