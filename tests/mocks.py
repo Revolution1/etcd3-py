@@ -4,8 +4,8 @@ import six
 from mock import Mock
 
 
-def fake_request(status_code, content, resp_class):
-    mock_response = Mock(spec=resp_class)
+def fake_request(status_code, content):
+    mock_response = Mock()
     mock_response.status_code = status_code
     mock_response.content = content
 

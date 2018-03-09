@@ -3,33 +3,22 @@ synchronous client
 """
 
 import json
-import os
 
 import requests
 import six
 from six.moves import urllib_parse
 
-from .apis import AuthAPI
-from .apis import ClusterAPI
-from .apis import ExtraAPI
-from .apis import KVAPI
-from .apis import LeaseAPI
-from .apis import MaintenanceAPI
-from .apis import WatchAPI
+from .baseclient import BaseClient
+from .baseclient import BaseModelizedStreamResponse
 from .errors import Etcd3APIError, Etcd3Exception
 from .errors import Etcd3StreamError
-from .swagger_helper import SwaggerSpec
-from .version import __version__
-
-rpc_swagger_json = os.path.join(os.path.dirname(__file__), 'rpc.swagger.json')
-
-swaggerSpec = SwaggerSpec(rpc_swagger_json)
 
 
-class ModelizedStreamResponse(object):
+class ModelizedStreamResponse(BaseModelizedStreamResponse):
     """
     Model of a stream response
     """
+
     def __init__(self, method, resp, decode=True):
         """
         :param resp: Response
@@ -45,8 +34,6 @@ class ModelizedStreamResponse(object):
         return self.resp.close()
 
     def __iter__(self):
-        swpath = swaggerSpec.getPath(self.method)
-        respModel = swpath.post.responses._200.schema.getModel()
         for data in iter_response(self.resp):
             if not data:
                 continue
@@ -55,10 +42,9 @@ class ModelizedStreamResponse(object):
                 # {"error":{"grpc_code":14,"http_code":503,"message":"rpc error: code = Unavailable desc = transport is closing","http_status":"Service Unavailable"}}
                 err = data.get('error')
                 raise Etcd3APIError(err.get('message'), code=err.get('code'), status=err.get('http_code'))
-            data = data.get('result', {})  # the real data is put under the key: 'result'
-            if self.decode:
-                data = Client.decodeRPCResponse(self.method, data)
-            yield respModel(data)
+            if 'result' in data:
+                data = data.get('result', {})  # the real data is put under the key: 'result'
+            yield Client._modelizeResponseData(self.method, data, decode=self.decode)
 
 
 def iter_response(resp):
@@ -92,36 +78,17 @@ def iter_response(resp):
         raise Etcd3StreamError("Stream decode error", buf, resp)
 
 
-class Client(AuthAPI, ClusterAPI, KVAPI, LeaseAPI, MaintenanceAPI, WatchAPI, ExtraAPI):
-    response_class = requests.models.Response
-
+class Client(BaseClient):
     def __init__(self, host='localhost', port=2379, protocol='http',
                  ca_cert=None, cert_key=None, cert_cert=None,
                  timeout=None, headers=None, user_agent=None, pool_size=30,
                  user=None, password=None, token=None):
+        super(Client, self).__init__(host=host, port=port, protocol=protocol,
+                                     ca_cert=ca_cert, cert_key=cert_key, cert_cert=cert_cert,
+                                     timeout=timeout, headers=headers, user_agent=user_agent, pool_size=pool_size,
+                                     user=user, password=password, token=token)
         self.session = requests.session()
         self.__set_conn_pool(pool_size)
-        self.host = host
-        self.port = port
-        self.cert = None
-        self.ca_cert = ca_cert
-        self.cert_key = cert_key
-        self.cert_cert = cert_cert
-        if ca_cert or cert_key and cert_cert:
-            self.protocol = 'https'
-        if ca_cert:
-            self.cert = ca_cert
-        if cert_cert and cert_key:
-            self.cert = (cert_cert, cert_key)
-        self.user_agent = user_agent
-        if not user_agent:
-            self.user_agent = 'etcd3-py/' + __version__
-        self.protocol = protocol
-        self.timeout = timeout
-        self.headers = headers or {}
-        self.user = user
-        self.password = password
-        self.token = token
 
     def __set_conn_pool(self, pool_size):
         from requests.adapters import HTTPAdapter
@@ -146,36 +113,8 @@ class Client(AuthAPI, ClusterAPI, KVAPI, LeaseAPI, MaintenanceAPI, WatchAPI, Ext
         return urllib_parse.urljoin(self.baseurl, method)
 
     @classmethod
-    def encodeRPCRequest(cls, method, data):
-        swpath = swaggerSpec.getPath(method)
-        if not swpath:
-            return data
-        reqSchema = swpath.post.parameters[0].schema
-        return reqSchema.encode(data)
-
-    @classmethod
-    def decodeRPCResponse(cls, method, data):
-        if isinstance(data, cls.response_class):
-            data = data.json()
-        swpath = swaggerSpec.getPath(method)
-        if not swpath:
-            return data
-        reqSchema = swpath.post.responses._200.schema
-        return reqSchema.decode(data)
-
-    @classmethod
-    def modelizeStreamResponse(cls, method, resp, decode=True):
+    def _modelizeStreamResponse(cls, method, resp, decode=True):
         return ModelizedStreamResponse(method, resp, decode)
-
-    @classmethod
-    def modelizeResponse(cls, method, resp, decode=True):
-        if isinstance(resp, cls.response_class):
-            resp = resp.json()
-        if decode:
-            resp = cls.decodeRPCResponse(method, resp)
-        swpath = swaggerSpec.getPath(method)
-        respModel = swpath.post.responses._200.schema.getModel()
-        return respModel(resp)
 
     @staticmethod
     def _raise_for_status(resp):
@@ -235,14 +174,14 @@ class Client(AuthAPI, ClusterAPI, KVAPI, LeaseAPI, MaintenanceAPI, WatchAPI, Ext
         kwargs.setdefault('headers', {}).setdefault('user_agent', self.user_agent)
         kwargs.setdefault('headers', {}).update(self.headers)
         if encode:
-            data = self.encodeRPCRequest(method, data)
+            data = self._encodeRPCRequest(method, data)
         resp = self._post(self._url(method), json=data or {}, stream=stream, **kwargs)
         self._raise_for_status(resp)
         if raw:
             return resp
         if stream:
             try:
-                return self.modelizeStreamResponse(method, resp)
+                return self._modelizeStreamResponse(method, resp)
             except Etcd3Exception:
                 resp.close()
-        return self.modelizeResponse(method, resp)
+        return self._modelizeResponseData(method, resp.json())

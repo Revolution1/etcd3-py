@@ -15,7 +15,7 @@ with open('HISTORY.rst') as history_file:
     history = history_file.read()
 
 requirements = [
-    'click==6.7',
+    # 'click==6.7',
     'enum34>=1.1.6',
     'six>=1.11.0',
     'requests>=2.10.0',
@@ -26,13 +26,11 @@ if PY3:
 
 setup_requirements = [
     # 'pytest-runner',
-    # TODO(revolution1): put setup requirements (distutils extensions, etc.) here
 ]
 
 test_requirements = [
     'pytest',
     'mock',
-    # TODO: put package test requirements here
 ]
 
 setup(
