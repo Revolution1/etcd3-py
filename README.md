@@ -1,5 +1,5 @@
-# etcd3-py (Developing)
-
+etcd3-py (Developing)
+---------------------
 
 [![pypi](https://img.shields.io/pypi/v/etcd3-py.svg)](https://pypi.python.org/pypi/etcd3-py)
 [![travis](https://travis-ci.org/Revolution1/etcd3-py.svg?branch=master)](https://travis-ci.org/Revolution1/etcd3-py)
@@ -9,21 +9,22 @@
 
 Python client for etcd v3 (Using grpc-json-gateway)
 
+For full documentation please read [this](http://etcd3-py.readthedocs.io/en/latest/?badge=latest)
 
 * Free software: Apache Software License 2.0
 * Documentation: https://etcd3.readthedocs.io.
 
 
 Features
---------
+========
 
-* [ ] support python2 and python3.5+
-* [ ] sync client based on requests
-* [ ] async client based on aiohttp
-* [ ] support etcd3 gRPC-JSON-Gateway including stream
-* [ ] response modelizing based on etcd3's swagger spec
-* [ ] generate code from swagger spec
-* [ ] auto unit testing
+* [x] support python2 and python3.5+
+* [x] sync client based on requests
+* [x] async client based on aiohttp
+* [x] support etcd3 gRPC-JSON-Gateway including stream
+* [x] response modelizing based on etcd3's swagger spec
+* [x] generate code from swagger spec
+* [x] auto unit testing
 * [ ] support APIs
     * [ ] KV
     * [ ] Watch
@@ -32,3 +33,14 @@ Features
     * [ ] Maintenance
     * [ ] Auth
     * [ ] Extra APIs
+
+Quick Start
+===========
+
+**Async Client**
+```python
+>>> from etcd3 import Client
+>>> client = Client('127.0.0.1', 2379)
+>>> client.version()
+EtcdVersion(etcdserver='3.3.0-rc.4', etcdcluster='3.3.0')
+```

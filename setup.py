@@ -4,34 +4,36 @@
 """The setup script."""
 import platform
 
+from pip.req import parse_requirements
 from setuptools import setup, find_packages
 
-PY3 = platform.python_version_tuple()[0] == '3'
+PY2 = platform.python_version_tuple()[0] == '2'
 
-with open('README.rst') as readme_file:
+with open('README.md') as readme_file:
     readme = readme_file.read()
 
 with open('HISTORY.rst') as history_file:
     history = history_file.read()
 
-requirements = [
-    # 'click==6.7',
-    'enum34>=1.1.6',
-    'six>=1.11.0',
-    'requests>=2.10.0',
-]
+# parse_requirements() returns generator of pip.req.InstallRequirement objects
+if PY2:
+    install_reqs = parse_requirements('requirements.txt', session='')
+else:
+    install_reqs = parse_requirements('requirements_py3.txt', session='')
 
-if PY3:
-    requirements.append('aiohttp')
+# reqs is a list of requirement
+requirements = [str(ir.req) for ir in install_reqs]
 
 setup_requirements = [
     # 'pytest-runner',
 ]
 
-test_requirements = [
-    'pytest',
-    'mock',
-]
+if PY2:
+    test_reqs = parse_requirements('requirements_dev.txt', session='')
+else:
+    test_reqs = parse_requirements('requirements_dev_py3.txt', session='')
+
+test_requirements = list({str(ir.req) for ir in test_reqs} - set(requirements))
 
 setup(
     name='etcd3-py',
@@ -41,7 +43,10 @@ setup(
     author="Renjie Cai",
     author_email='revol.cai@gmail.com',
     url='https://github.com/revolution1/etcd3-py',
-    packages=find_packages(include=['etcd3']),
+    packages=find_packages(include=['etcd3*']),
+    package_data={
+        "etcd3": ["*.json"],
+    },
     # entry_points={
     #     'console_scripts': [
     #         'etcd3cli=etcd3.cli:main'
