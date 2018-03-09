@@ -1,0 +1,4 @@
+-r requirements_dev_py3.txt
+m2r>=0.1.13
+Sphinx>=1.4.8
+#cryptography>=1.7

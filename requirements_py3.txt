@@ -1,2 +1,2 @@
-aiohttp>=3.0.7
 -r requirements.txt
+aiohttp>=3.0.7

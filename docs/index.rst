@@ -1,9 +1,6 @@
-Welcome to etcd3-py's documentation!
-======================================
+.. mdinclude:: ../README.md
 
-.. include:: ../README.rst
-
-Instructions:
+Instructions
 =============
 
 .. toctree::
@@ -15,7 +12,7 @@ Instructions:
    authors
    history
 
-API Reference:
+API Reference
 ==============
 .. toctree::
    :maxdepth: 4
