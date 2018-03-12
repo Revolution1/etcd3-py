@@ -1,5 +1,5 @@
-from .errors import Etcd3APIError
-from .errors import Etcd3Exception
 from .errors import Etcd3StreamError
+from .errors import get_client_error
+from .go_etcd_rpctypes_error import Etcd3Exception
 
-__all__ = ['Etcd3Exception', 'Etcd3APIError', 'Etcd3StreamError']
+__all__ = ['Etcd3Exception', 'get_client_error', 'Etcd3StreamError']

@@ -1,13 +1,15 @@
 import functools
 import itertools
 from collections import namedtuple, OrderedDict, Hashable
-from inspect import getargspec
 from threading import Lock
+
+try:
+    from inspect import getfullargspec as getargspec
+except ImportError:
+    from inspect import getargspec
 
 import six
 from six import wraps
-
-bytes_types = (bytes, bytearray)
 
 _CacheInfo = namedtuple("CacheInfo", "hits misses maxsize currsize")
 
@@ -173,12 +175,52 @@ def memoize_in_object(fn):
     return _memoize
 
 
-if __name__ == '__main__':
-    @lru_cache(maxsize=2)
-    def f(a):
-        print('calc:%s' % a)
-        return a ** 2
+bytes_types = (bytes, bytearray)
 
 
-    for i in range(1, 20):
-        print(f(i % 3))
+def incr_last_byte(data):
+    """
+    Get the last byte in the array and increment it
+    """
+    if not isinstance(data, bytes_types):
+        if isinstance(data, six.string_types):
+            data = data.encode('utf-8')
+        else:
+            data = six.b(str(data))
+    s = bytearray(data)
+    s[-1] = s[-1] + 1
+    return bytes(s)
+
+
+def check_param(at_least_one_of=None, at_most_one_of=None):
+    """
+    check if at least/most one of params is given
+
+    >>> @check_param(at_least_one_of=['a', 'b'])
+    >>> def fn(a=None, b=None):
+    ...     pass
+    >>> fn()
+    TypeError: fn() requires at least one argument of a,b
+    """
+
+    def deco(fn):
+        if not (at_least_one_of or at_most_one_of):
+            raise TypeError("check_param() requires at least one argument of at_least_one_of, at_most_one_of")
+        if not (isinstance(at_least_one_of, (list, tuple)) or isinstance(at_most_one_of, (list, tuple))):
+            raise TypeError("check_param() only accept list or tuple as parameter")
+
+        @functools.wraps(fn)
+        def inner(*args, **kwargs):
+            arguments = dict(**kwargs, **dict(zip(getargspec(fn).args, args)))
+            if at_least_one_of and not [arguments.get(i) for i in at_least_one_of if arguments.get(i) is not None]:
+                raise TypeError("{name}() requires at least one argument of {args}"
+                                .format(name=fn.__name__, args=','.join(at_least_one_of)))
+            if at_most_one_of:
+                if len([arguments.get(i) for i in at_most_one_of if arguments.get(i) is not None]) > 1:
+                    raise TypeError("{name}() requires at most one of param {args}"
+                                    .format(name=fn.__name__, args=' or '.join(at_most_one_of)))
+            return fn(*args, **kwargs)
+
+        return inner
+
+    return deco

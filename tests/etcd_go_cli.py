@@ -52,6 +52,7 @@ def etcdctl(*args, **kwargs):
     json = kwargs.get('json', True)
     endpoint = kwargs.get('endpoint', ETCD_ENDPOINT)
     version = kwargs.get('version', 3)
+    raise_error = kwargs.get('raise_error')
 
     envs = {}
     cmd = [ETCDCTL_PATH, '--endpoints', endpoint]
@@ -60,9 +61,9 @@ def etcdctl(*args, **kwargs):
     if version == 3:
         envs['ETCDCTL_API'] = '3'
     cmd.extend(args)
-    p = Popen(cmd, stdout=PIPE, env=envs)
+    p = Popen(cmd, stdout=PIPE, stderr=PIPE, env=envs)
     out, err = p.communicate()
-    if p.returncode != 0:
+    if p.returncode != 0 and raise_error:
         raise RuntimeError(err)
     return out
 

@@ -43,7 +43,7 @@ class BaseClient(AuthAPI, ClusterAPI, KVAPI, LeaseAPI, MaintenanceAPI, WatchAPI,
     def __init__(self, host='localhost', port=2379, protocol='http',
                  ca_cert=None, cert_key=None, cert_cert=None,
                  timeout=None, headers=None, user_agent=None, pool_size=30,
-                 user=None, password=None, token=None):
+                 username=None, password=None, token=None):
         self.host = host
         self.port = port
         self.cert = None
@@ -62,7 +62,7 @@ class BaseClient(AuthAPI, ClusterAPI, KVAPI, LeaseAPI, MaintenanceAPI, WatchAPI,
         self.protocol = protocol
         self.timeout = timeout
         self.headers = headers or {}
-        self.user = user
+        self.username = username
         self.password = password
         self.token = token
 
@@ -154,3 +154,14 @@ class BaseClient(AuthAPI, ClusterAPI, KVAPI, LeaseAPI, MaintenanceAPI, WatchAPI,
         :return: Etcd3RPCResponseModel or Etcd3StreamingResponse
         """
         raise NotImplemented
+
+    def auth(self, username=None, password=None):
+        """
+        call auth.authenticate and save the token
+
+        :type username: str
+        :param username: username
+        :type password: str
+        :param password: password
+        """
+        pass

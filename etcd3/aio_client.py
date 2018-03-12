@@ -7,8 +7,11 @@ import ssl
 
 import aiohttp
 
-from .baseclient import BaseClient, BaseModelizedStreamResponse
-from .errors import Etcd3APIError, Etcd3StreamError, Etcd3Exception
+from .baseclient import BaseClient
+from .baseclient import BaseModelizedStreamResponse
+from .errors import Etcd3Exception
+from .errors import Etcd3StreamError
+from .errors import get_client_error
 
 
 class ModelizedStreamResponse(BaseModelizedStreamResponse):
@@ -98,11 +101,11 @@ class AioClient(BaseClient):
     def __init__(self, host='localhost', port=2379, protocol='http',
                  ca_cert=None, cert_key=None, cert_cert=None,
                  timeout=None, headers=None, user_agent=None, pool_size=30,
-                 user=None, password=None, token=None):
+                 username=None, password=None, token=None):
         super(AioClient, self).__init__(host=host, port=port, protocol=protocol,
                                         ca_cert=ca_cert, cert_key=cert_key, cert_cert=cert_cert,
                                         timeout=timeout, headers=headers, user_agent=user_agent, pool_size=pool_size,
-                                        user=user, password=password, token=token)
+                                        username=username, password=password, token=token)
         if self.cert:
             ssl_context = ssl.SSLContext()
             ssl_context.load_cert_chain(*self.cert)
@@ -162,7 +165,7 @@ class AioClient(BaseClient):
         else:
             error = data.get('error')
             code = data.get('code')
-        raise Etcd3APIError(error, code, status, resp)
+        raise get_client_error(error, code, status, resp)
 
     async def call_rpc(self, method, data=None, stream=False, encode=True, raw=False, **kwargs):
         """
@@ -181,6 +184,8 @@ class AioClient(BaseClient):
         """
         data = data or {}
         kwargs.setdefault('timeout', self.timeout)
+        if self.token:
+            kwargs.setdefault('headers', {}).setdefault('authorization', self.token)
         kwargs.setdefault('headers', {}).setdefault('user_agent', self.user_agent)
         kwargs.setdefault('headers', {}).update(self.headers)
         if encode:
@@ -195,3 +200,26 @@ class AioClient(BaseClient):
             except Etcd3Exception:
                 resp.close()
         return self._modelizeResponseData(method, await resp.json())
+
+    def auth(self, username=None, password=None):
+        """
+        call auth.authenticate and save the token
+
+        :type username: str
+        :param username: username
+        :type password: str
+        :param password: password
+        """
+        import asyncio
+        loop = asyncio.get_event_loop()
+
+        async def _auth(self, username, password):
+            self.token = None
+            username = username or self.username
+            password = password or self.password
+            r = await self.authenticate(username, password)
+            self.username = username
+            self.password = password
+            self.token = r.token
+
+        loop.run_until_complete(_auth(self, username, password))
