@@ -191,6 +191,10 @@ def incr_last_byte(data):
     s[-1] = s[-1] + 1
     return bytes(s)
 
+def merge_two_dicts(x, y):
+    z = x.copy()
+    z.update(y)
+    return z
 
 def check_param(at_least_one_of=None, at_most_one_of=None):
     """
@@ -211,7 +215,7 @@ def check_param(at_least_one_of=None, at_most_one_of=None):
 
         @functools.wraps(fn)
         def inner(*args, **kwargs):
-            arguments = dict(**kwargs, **dict(zip(getargspec(fn).args, args)))
+            arguments = merge_two_dicts(kwargs, dict(zip(getargspec(fn).args, args)))
             if at_least_one_of and not [arguments.get(i) for i in at_least_one_of if arguments.get(i) is not None]:
                 raise TypeError("{name}() requires at least one argument of {args}"
                                 .format(name=fn.__name__, args=','.join(at_least_one_of)))
