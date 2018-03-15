@@ -1,10 +1,12 @@
 from .base import BaseAPI
 from ..models import RangeRequestSortOrder
 from ..models import RangeRequestSortTarget
+from ..utils import check_param
+from ..utils import incr_last_byte
 
 
 class KVAPI(BaseAPI):
-    def compact(self, revision, physical):
+    def compact(self, revision, physical=False):
         """
         Compact compacts the event history in the etcd key-value store. The key-value
         store should be periodically compacted or the event history will continue to grow
@@ -15,13 +17,17 @@ class KVAPI(BaseAPI):
         :type physical: bool
         :param physical: physical is set so the RPC will wait until the compaction is physically
             applied to the local database such that compacted entries are totally
-            removed from the backend database.
+            removed from the backend database. [default: False]
         """
         method = '/v3alpha/kv/compaction'
-        data = {}
+        data = {
+            "revision": revision,
+            "physical": physical
+        }
         return self.call_rpc(method, data=data)
 
-    def delete_range(self, key, range_end, prev_kv):
+    @check_param(at_least_one_of=['key', 'all'], at_most_one_of=['range_end', 'prefix', 'all'])
+    def delete_range(self, key=None, range_end=None, prev_kv=False, prefix=False, all=False, txn_obj=False):
         """
         DeleteRange deletes the given range from the key-value store.
         A delete request increments the revision of the key-value store
@@ -38,12 +44,29 @@ class KVAPI(BaseAPI):
         :type prev_kv: bool
         :param prev_kv: If prev_kv is set, etcd gets the previous key-value pairs before deleting it.
             The previous key-value pairs will be returned in the delete response.
+        :type prefix: bool
+        :param prefix: if the key is a prefix [default: False]
+        :type all: bool
+        :param all: all the keys [default: False]
+        :type txn_obj: bool
+        :param txn_obj: return dict for the txn instead of call the api
         """
         method = '/v3alpha/kv/deleterange'
-        data = {}
+        if all:
+            key = range_end = '\0'
+        if prefix:
+            range_end = incr_last_byte(key)
+        data = {
+            "key": key,
+            "range_end": range_end,
+            "prev_kv": prev_kv
+        }
+        data = {k: v for k, v in data.items() if v is not None}
+        if txn_obj:
+            return {"request_delete_range": data}
         return self.call_rpc(method, data=data)
 
-    def put(self, key, value, lease, prev_kv, ignore_value, ignore_lease):
+    def put(self, key, value, lease=0, prev_kv=False, ignore_value=False, ignore_lease=False, txn_obj=False):
         """
         Put puts the given key into the key-value store.
         A put request increments the revision of the key-value store
@@ -65,26 +88,42 @@ class KVAPI(BaseAPI):
         :type ignore_lease: bool
         :param ignore_lease: If ignore_lease is set, etcd updates the key using its current lease.
             Returns an error if the key does not exist.
+        :type txn_obj: bool
+        :param txn_obj: return dict for the txn instead of call the api
         """
         method = '/v3alpha/kv/put'
-        data = {}
+        data = {
+            "key": key,
+            "value": value,
+            "lease": lease,
+            "prev_kv": prev_kv,
+            "ignore_value": ignore_value,
+            "ignore_lease": ignore_lease
+        }
+        data = {k: v for k, v in data.items() if v is not None}
+        if txn_obj:
+            return {"request_put": data}
         return self.call_rpc(method, data=data)
 
+    @check_param(at_least_one_of=['key', 'all'], at_most_one_of=['range_end', 'prefix', 'all'])
     def range(
         self,
-        key,
-        range_end,
-        limit,
-        revision,
-        serializable,
-        keys_only,
-        count_only,
-        min_mod_revision,
-        max_mod_revision,
-        min_create_revision,
-        max_create_revision,
+        key=None,
+        range_end=None,
+        limit=0,
+        revision=None,
+        serializable=False,
+        keys_only=False,
+        count_only=False,
+        min_mod_revision=None,
+        max_mod_revision=None,
+        min_create_revision=None,
+        max_create_revision=None,
         sort_order=RangeRequestSortOrder.NONE,
         sort_target=RangeRequestSortTarget.KEY,
+        prefix=False,
+        all=False,
+        txn_obj=False
     ):
         """
         Range gets the keys in the range from the key-value store.
@@ -131,9 +170,36 @@ class KVAPI(BaseAPI):
         :type max_create_revision: int
         :param max_create_revision: max_create_revision is the upper bound for returned key create revisions; all keys with
             greater create revisions will be filtered away.
+        :type prefix: bool
+        :param prefix: if the key is a prefix [default: False]
+        :type all: bool
+        :param all: all the keys [default: False]
+        :type txn_obj: bool
+        :param txn_obj: return dict for the txn instead of call the api
         """
         method = '/v3alpha/kv/range'
-        data = {}
+        if all:
+            key = range_end = '\0'
+        if prefix:
+            range_end = incr_last_byte(key)
+        data = {
+            "key": key,
+            "range_end": range_end,
+            "limit": limit,
+            "revision": revision,
+            "sort_order": sort_order,
+            "sort_target": sort_target,
+            "serializable": serializable,
+            "keys_only": keys_only,
+            "count_only": count_only,
+            "min_mod_revision": min_mod_revision,
+            "max_mod_revision": max_mod_revision,
+            "min_create_revision": min_create_revision,
+            "max_create_revision": max_create_revision
+        }
+        data = {k: v for k, v in data.items() if v is not None}
+        if txn_obj:
+            return {"request_range": data}
         return self.call_rpc(method, data=data)
 
     def txn(self, compare, success, failure):
@@ -155,5 +221,9 @@ class KVAPI(BaseAPI):
         :param failure: failure is a list of requests which will be applied when compare evaluates to false.
         """
         method = '/v3alpha/kv/txn'
-        data = {}
+        data = {
+            "compare": compare,
+            "success": success,
+            "failure": failure
+        }
         return self.call_rpc(method, data=data)

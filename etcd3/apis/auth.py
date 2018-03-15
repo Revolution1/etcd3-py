@@ -81,7 +81,7 @@ class AuthAPI(BaseAPI):
 
     @check_param(at_least_one_of=['key', 'all'], at_most_one_of=['range_end', 'prefix', 'all'])
     def role_grant_permission(self, name, key=None, permType=authpbPermissionType.READ,
-                              range_end=None, prefix=None, all=None):
+                              range_end=None, prefix=False, all=False):
         """
         RoleGrantPermission grants a permission of a specified key or range to a specified role.
 
@@ -115,6 +115,7 @@ class AuthAPI(BaseAPI):
                 "range_end": range_end
             }
         }
+        data['perm'] = {k: v for k, v in data['perm'].items() if v is not None}
         return self.call_rpc(method, data=data)
 
     def role_list(self):
@@ -126,7 +127,7 @@ class AuthAPI(BaseAPI):
         return self.call_rpc(method, data=data)
 
     @check_param(at_least_one_of=['key', 'all'], at_most_one_of=['range_end', 'prefix', 'all'])
-    def role_revoke_permission(self, role, key=None, range_end=None, prefix=None, all=None):
+    def role_revoke_permission(self, role, key=None, range_end=None, prefix=False, all=False):
         """
         RoleRevokePermission revokes a key or range permission of a specified role.
 
@@ -155,6 +156,7 @@ class AuthAPI(BaseAPI):
             "key": key,
             "range_end": range_end
         }
+        data = {k: v for k, v in data.items() if v is not None}
         return self.call_rpc(method, data=data)
 
     def user_add(self, name, password):
