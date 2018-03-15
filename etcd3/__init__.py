@@ -1,5 +1,5 @@
 # -*- coding: utf-8 -*-
-
+# flake8: noqa
 """Top-level package for etcd3-py."""
 import six
 

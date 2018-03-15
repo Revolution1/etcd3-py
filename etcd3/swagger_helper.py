@@ -19,7 +19,7 @@ except ImportError:
     yaml = None
 
 if six.PY2:
-    file_types = file, io.IOBase
+    file_types = file, io.IOBase  # noqa: F821
 else:
     file_types = (io.IOBase,)
 
@@ -229,7 +229,9 @@ PROP_ENCODERS = {
 
 if six.PY3:
     def _encode(data):
-        """Encode the given data using base-64
+        """
+        Encode the given data using base-64
+
         :param data:
         :return: base-64 encoded string
         """
@@ -240,6 +242,7 @@ if six.PY3:
         return base64.b64encode(data).decode("utf-8")
 
 
+    # noqa: E303
     PROP_ENCODERS['byte'] = _encode
 else:
     PROP_ENCODERS['byte'] = lambda x: base64.b64encode(x) if x is not None else x
@@ -270,6 +273,7 @@ if six.PY3:
         return base64.b64decode(data.decode("utf-8"))
 
 
+    # noqa: E303
     PROP_DECODERS['byte'] = _decode
 else:
     PROP_DECODERS['byte'] = lambda x: base64.b64decode(x) if x is not None else x

@@ -11,7 +11,7 @@ etcd3-py (Developing)
 Python client for etcd v3 (Using gRPC-JSON-Gateway)
 
 * Free software: Apache Software License 2.0
-* Documentation: https://etcd3.readthedocs.io.
+* Documentation: https://etcd3-py.readthedocs.io.
 
 Notice: The authentication header through gRPC-JSON-Gateway only supported in [etcd v3.3+](https://github.com/coreos/etcd/pull/7999)
 
@@ -29,10 +29,10 @@ Features
     * [x] Auth
     * [ ] KV
     * [ ] Watch
-    * [ ] Cluster
-    * [ ] Lease
-    * [ ] Maintenance
-    * [ ] Extra APIs
+    * [x] Cluster
+    * [x] Lease
+    * [x] Maintenance
+    * [x] Extra APIs
 
 Quick Start
 ===========

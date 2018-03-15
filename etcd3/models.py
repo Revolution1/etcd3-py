@@ -1,11 +1,12 @@
 # Models generated from rpc.swagger.json, do not edit
+# flake8: noqa
 import enum
 
 
 class AlarmRequestAlarmAction(enum.Enum):
     """
     ref: #/definitions/AlarmRequestAlarmAction
-    
+
     default: GET
     """
     GET = 'GET'
@@ -16,7 +17,7 @@ class AlarmRequestAlarmAction(enum.Enum):
 class CompareCompareResult(enum.Enum):
     """
     ref: #/definitions/CompareCompareResult
-    
+
     default: EQUAL
     """
     EQUAL = 'EQUAL'
@@ -28,7 +29,7 @@ class CompareCompareResult(enum.Enum):
 class CompareCompareTarget(enum.Enum):
     """
     ref: #/definitions/CompareCompareTarget
-    
+
     default: VERSION
     """
     VERSION = 'VERSION'
@@ -40,7 +41,7 @@ class CompareCompareTarget(enum.Enum):
 class EventEventType(enum.Enum):
     """
     ref: #/definitions/EventEventType
-    
+
     default: PUT
     """
     PUT = 'PUT'
@@ -50,7 +51,7 @@ class EventEventType(enum.Enum):
 class RangeRequestSortOrder(enum.Enum):
     """
     ref: #/definitions/RangeRequestSortOrder
-    
+
     default: NONE
     """
     NONE = 'NONE'
@@ -61,7 +62,7 @@ class RangeRequestSortOrder(enum.Enum):
 class RangeRequestSortTarget(enum.Enum):
     """
     ref: #/definitions/RangeRequestSortTarget
-    
+
     default: KEY
     """
     KEY = 'KEY'
@@ -74,7 +75,7 @@ class RangeRequestSortTarget(enum.Enum):
 class WatchCreateRequestFilterType(enum.Enum):
     """
     ref: #/definitions/WatchCreateRequestFilterType
-    
+
     default: NOPUT
     """
     NOPUT = 'NOPUT'
@@ -84,7 +85,7 @@ class WatchCreateRequestFilterType(enum.Enum):
 class authpbPermissionType(enum.Enum):
     """
     ref: #/definitions/authpbPermissionType
-    
+
     default: READ
     """
     READ = 'READ'
@@ -95,7 +96,7 @@ class authpbPermissionType(enum.Enum):
 class etcdserverpbAlarmType(enum.Enum):
     """
     ref: #/definitions/etcdserverpbAlarmType
-    
+
     default: NONE
     """
     NONE = 'NONE'

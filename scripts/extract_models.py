@@ -1,5 +1,6 @@
 ENUM_FILE_TPL = '''\
 # Models generated from rpc.swagger.json, do not edit
+# flake8: noqa
 import enum
 
 {% for e in enums %}

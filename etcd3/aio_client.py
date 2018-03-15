@@ -220,7 +220,7 @@ class AioClient(BaseClient):
             self.token = None
             try:
                 r = await self.authenticate(username, password)
-            except:
+            except Exception:
                 self.token = old
                 raise
             else:

@@ -204,7 +204,7 @@ class Client(BaseClient):
         self.token = None
         try:
             r = self.authenticate(username, password)
-        except:
+        except Exception:
             self.token = old
             raise
         else:

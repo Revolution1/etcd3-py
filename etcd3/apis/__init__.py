@@ -1,3 +1,4 @@
+# flake8: noqa
 from .auth import AuthAPI
 from .base import BaseAPI
 from .cluster import ClusterAPI

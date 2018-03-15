@@ -1,3 +1,4 @@
+# flake8: noqa
 from .errors import Etcd3StreamError
 from .errors import get_client_error
 from .go_etcd_rpctypes_error import ErrAuthFailed
