@@ -27,7 +27,7 @@ class KVAPI(BaseAPI):
         return self.call_rpc(method, data=data)
 
     @check_param(at_least_one_of=['key', 'all'], at_most_one_of=['range_end', 'prefix', 'all'])
-    def delete_range(self, key, range_end=None, prev_kv=False, prefix=False, all=False, txn_obj=False):
+    def delete_range(self, key=None, range_end=None, prev_kv=False, prefix=False, all=False, txn_obj=False):
         """
         DeleteRange deletes the given range from the key-value store.
         A delete request increments the revision of the key-value store
@@ -108,7 +108,7 @@ class KVAPI(BaseAPI):
     @check_param(at_least_one_of=['key', 'all'], at_most_one_of=['range_end', 'prefix', 'all'])
     def range(
         self,
-        key,
+        key=None,
         range_end=None,
         limit=0,
         revision=None,

@@ -18,7 +18,7 @@ Notice: The authentication header through gRPC-JSON-Gateway only supported in [e
 Features
 ========
 
-* [x] support python2 and python3.5+
+* [x] support python2.7 and python3.5+
 * [x] sync client based on requests
 * [x] async client based on aiohttp
 * [x] support etcd3 gRPC-JSON-Gateway including stream

@@ -127,7 +127,7 @@ class AuthAPI(BaseAPI):
         return self.call_rpc(method, data=data)
 
     @check_param(at_least_one_of=['key', 'all'], at_most_one_of=['range_end', 'prefix', 'all'])
-    def role_revoke_permission(self, role, key=None, range_end=None, prefix=False , all=False):
+    def role_revoke_permission(self, role, key=None, range_end=None, prefix=False, all=False):
         """
         RoleRevokePermission revokes a key or range permission of a specified role.
 
