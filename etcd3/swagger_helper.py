@@ -1,5 +1,6 @@
 import base64
 import copy
+import enum
 import io
 import json
 import keyword
@@ -7,7 +8,6 @@ import os
 import re
 from collections import OrderedDict
 
-import enum
 import six
 
 from .utils import memoize_in_object
@@ -351,10 +351,17 @@ class SwaggerNode(object):
                             setattr(this, k, v)
 
                     name = self._path[-1]
+                    ite = lambda self: self._data.__iter__()
+                    con = lambda self, key: self._data.__contains__(key)
                     rep = lambda self: '%s(%s)' % (name, ', '.join(
                         ['%s=%s' % (k, repr(v)) for k, v in six.iteritems(self.__dict__) if k in self._data]))
 
-                    return type(str(name), (), {'__init__': init, '__repr__': rep})
+                    return type(str(name), (), {
+                        '__init__': init,
+                        '__repr__': rep,
+                        '__iter__': ite,
+                        '__contains__': con
+                    })
 
             elif self.type == 'array':
 
@@ -384,9 +391,13 @@ class SwaggerNode(object):
                     return init
             elif self.type in PROP_DECODERS:
                 def encode(data):
+                    if isinstance(data, enum.Enum):
+                        data = data.value
                     rt = PROP_ENCODERS[self.type](PROP_ENCODERS[self.format](data))
                     if self.default and rt is None:
-                        return copy.copy(self.default)
+                        rt = copy.copy(self.default)
+                    if isinstance(rt, six.binary_type):
+                        rt = six.text_type(rt, encoding='utf-8')
                     return rt
 
                 def decode(data):

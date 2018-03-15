@@ -26,14 +26,14 @@ class MaintenanceAPI(BaseAPI):
         }
         return self.call_rpc(method, data=data)
 
-    def get_alarm(self, memberID, alarm):
-        return self.alarm(AlarmRequestAlarmAction.GET, memberID, alarm)
+    def alarm_get(self, memberID, alarm):
+        return self.alarm(memberID, AlarmRequestAlarmAction.GET, alarm)
 
-    def activate_alarm(self, memberID, alarm):
-        return self.alarm(AlarmRequestAlarmAction.ACTIVATE, memberID, alarm)
+    def alarm_activate(self, memberID, alarm):
+        return self.alarm(memberID, AlarmRequestAlarmAction.ACTIVATE, alarm)
 
-    def deactivate_alarm(self, memberID, alarm):
-        return self.alarm(AlarmRequestAlarmAction.DEACTIVATE, memberID, alarm)
+    def alarm_deactivate(self, memberID, alarm):
+        return self.alarm(memberID, AlarmRequestAlarmAction.DEACTIVATE, alarm)
 
     def defragment(self):
         """

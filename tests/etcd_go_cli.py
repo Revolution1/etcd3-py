@@ -49,7 +49,7 @@ ETCDCTL_PATH = find_executable('etcdctl')
 def etcdctl(*args, **kwargs):
     if len(args) == 1:
         args = shlex.split(args[0])
-    json = kwargs.get('json', True)
+    json = kwargs.get('json', False)
     endpoint = kwargs.get('endpoint', ETCD_ENDPOINT)
     version = kwargs.get('version', 3)
     raise_error = kwargs.get('raise_error')

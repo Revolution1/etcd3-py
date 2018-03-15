@@ -29,7 +29,7 @@ Features
     * [ ] Cluster
     * [ ] Lease
     * [ ] Maintenance
-    * [ ] Auth
+    * [x] Auth
     * [ ] Extra APIs
 
 Quick Start

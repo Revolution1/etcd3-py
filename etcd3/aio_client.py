@@ -49,7 +49,7 @@ class ModelizedStreamResponse(BaseModelizedStreamResponse):
         if data.get('error'):
             # {"error":{"grpc_code":14,"http_code":503,"message":"rpc error: code = Unavailable desc = transport is closing","http_status":"Service Unavailable"}}
             err = data.get('error')
-            raise Etcd3APIError(err.get('message'), code=err.get('code'), status=err.get('http_code'))
+            raise get_client_error(err.get('message'), code=err.get('code'), status=err.get('http_code'))
         if 'result' in data:
             data = data.get('result', {})  # the real data is put under the key: 'result'
         return AioClient._modelizeResponseData(self.method, data, decode=self.decode)
@@ -214,12 +214,18 @@ class AioClient(BaseClient):
         loop = asyncio.get_event_loop()
 
         async def _auth(self, username, password):
-            self.token = None
             username = username or self.username
             password = password or self.password
-            r = await self.authenticate(username, password)
-            self.username = username
-            self.password = password
-            self.token = r.token
+            old = self.token
+            self.token = None
+            try:
+                r = await self.authenticate(username, password)
+            except:
+                self.token = old
+                raise
+            else:
+                self.username = username
+                self.password = password
+                self.token = r.token
 
         loop.run_until_complete(_auth(self, username, password))

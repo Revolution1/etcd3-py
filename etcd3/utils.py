@@ -191,10 +191,12 @@ def incr_last_byte(data):
     s[-1] = s[-1] + 1
     return bytes(s)
 
+
 def merge_two_dicts(x, y):
     z = x.copy()
     z.update(y)
     return z
+
 
 def check_param(at_least_one_of=None, at_most_one_of=None):
     """

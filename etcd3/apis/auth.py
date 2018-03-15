@@ -27,7 +27,9 @@ class AuthAPI(BaseAPI):
         """
         method = '/v3alpha/auth/disable'
         data = {}
-        return self.call_rpc(method, data=data)
+        r = self.call_rpc(method, data=data)
+        self.token = None # clear local token
+        return r
 
     def auth_enable(self):
         """
