@@ -26,12 +26,12 @@ Features
 * [x] generate code from swagger spec
 * [x] auto unit testing
 * [ ] support APIs
+    * [x] Auth
     * [ ] KV
     * [ ] Watch
     * [ ] Cluster
     * [ ] Lease
     * [ ] Maintenance
-    * [x] Auth
     * [ ] Extra APIs
 
 Quick Start

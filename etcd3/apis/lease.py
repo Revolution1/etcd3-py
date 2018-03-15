@@ -10,10 +10,12 @@ class LeaseAPI(BaseAPI):
         :param ID: ID is the lease ID to revoke. When the ID is revoked, all associated keys will be deleted.
         """
         method = '/v3alpha/kv/lease/revoke'
-        data = {}
+        data = {
+            "ID": ID
+        }
         return self.call_rpc(method, data=data)
 
-    def lease_time_to_live(self, ID, keys):
+    def lease_time_to_live(self, ID, keys=False):
         """
         LeaseTimeToLive retrieves lease information.
 
@@ -23,10 +25,13 @@ class LeaseAPI(BaseAPI):
         :param keys: keys is true to query all the keys attached to this lease.
         """
         method = '/v3alpha/kv/lease/timetolive'
-        data = {}
+        data = {
+            "ID": ID,
+            "keys": keys
+        }
         return self.call_rpc(method, data=data)
 
-    def lease_grant(self, TTL, ID):
+    def lease_grant(self, TTL, ID=0):
         """
         LeaseGrant creates a lease which expires if the server does not receive a keepAlive
         within a given time to live period. All keys attached to the lease will be expired and
@@ -38,9 +43,14 @@ class LeaseAPI(BaseAPI):
         :param ID: ID is the requested ID for the lease. If ID is set to 0, the lessor chooses an ID.
         """
         method = '/v3alpha/lease/grant'
-        data = {}
+        data = {
+            "TTL": TTL,
+            "ID": ID
+        }
         return self.call_rpc(method, data=data)
 
+    # TODO: stream keepalive with context
+    # http://docs.python-requests.org/en/master/user/advanced/#chunk-encoded-requests
     def lease_keep_alive(self, ID):
         """
         LeaseKeepAlive keeps the lease alive by streaming keep alive requests from the client
@@ -50,5 +60,7 @@ class LeaseAPI(BaseAPI):
         :param ID: ID is the lease ID for the lease to keep alive.
         """
         method = '/v3alpha/lease/keepalive'
-        data = {}
+        data = {
+            "ID": ID
+        }
         return self.call_rpc(method, data=data)
