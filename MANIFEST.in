@@ -4,6 +4,7 @@ include HISTORY.rst
 include LICENSE
 include README.md
 include requirements*.txt
+include *.yml
 
 recursive-include tests *
 recursive-include etcd3 *
