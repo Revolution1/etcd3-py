@@ -38,6 +38,8 @@ class ModelizedStreamResponse(BaseModelizedStreamResponse):
         for data in iter_response(self.resp):
             if not data:
                 continue
+            if six.PY3:
+                data = six.text_type(data, encoding='utf-8')
             data = json.loads(data)
             if data.get('error'):
                 # {"error":{"grpc_code":14,"http_code":503,"message":"rpc error: code = Unavailable desc = transport is closing","http_status":"Service Unavailable"}}
@@ -62,15 +64,13 @@ def iter_response(resp):
     buf = []
     bracket_flag = 0
     for c in resp.iter_content(chunk_size=1):
-        if six.PY3:
-            c = six.text_type(c, encoding='utf-8')
         buf.append(c)
-        if c == '{':
+        if c == b'{':
             bracket_flag += 1
-        elif c == '}':
+        elif c == b'}':
             bracket_flag -= 1
         if bracket_flag == 0:
-            s = ''.join(buf)
+            s = b''.join(buf)
             buf = []
             yield s
         elif bracket_flag < 0:
