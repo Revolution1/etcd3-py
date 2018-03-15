@@ -46,6 +46,4 @@ deploy:
     branch: master
     repo: Revolution1/etcd3-py
     python:
-      - 2.7
-      - 3.5
       - 3.6

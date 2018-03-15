@@ -72,8 +72,10 @@ NO_ETCD_SERVICE = True
 try:
     if ETCDCTL_PATH and etcdctl('--dial-timeout=0.2s endpoint health'):
         NO_ETCD_SERVICE = False
-except:
-    pass
+except Exception as e:
+    if not ETCDCTL_PATH:
+        print("etcdctl executable not found")
+    print(e)
 
 if __name__ == '__main__':
     print(etcdctl('get foo'))
