@@ -52,7 +52,7 @@ def etcdctl(*args, **kwargs):
     json = kwargs.get('json', False)
     endpoint = kwargs.get('endpoint', ETCD_ENDPOINT)
     version = kwargs.get('version', 3)
-    raise_error = kwargs.get('raise_error')
+    raise_error = kwargs.get('raise_error', True)
 
     envs = {}
     cmd = [ETCDCTL_PATH, '--endpoints', endpoint]
@@ -72,9 +72,9 @@ NO_ETCD_SERVICE = True
 try:
     if ETCDCTL_PATH and etcdctl('--dial-timeout=0.2s endpoint health'):
         NO_ETCD_SERVICE = False
-except Exception as e:
-    if not ETCDCTL_PATH:
+    else:
         print("etcdctl executable not found")
+except Exception as e:
     print(e)
 
 if __name__ == '__main__':
