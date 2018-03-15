@@ -13,7 +13,7 @@ end_of_line = lf
 [*.json]
 indent_size = 2
 
-[*.yaml]
+[*.{yaml,yml}]
 indent_size = 2
 
 [*.bat]

@@ -230,3 +230,14 @@ def check_param(at_least_one_of=None, at_most_one_of=None):
         return inner
 
     return deco
+
+
+def run_coro(coro):
+    """
+    :type coro: asyncio.coroutine
+    :param coro: the coroutine to run
+    """
+    try:
+        coro.send(None)
+    except StopIteration as e:
+        return e.value

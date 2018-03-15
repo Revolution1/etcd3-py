@@ -2,10 +2,30 @@
 # This file will be regenerated if you run travis_pypi_setup.py
 
 language: python
+
 python:
   - 3.6
   - 3.5
   - 2.7
+
+sudo: required
+
+services:
+  - docker
+
+services:
+  - docker
+
+env:
+  - NODE1=0.0.0.0
+
+before_install:
+  - docker run -d -p 2379:2379 -p 2380:2380 --name etcd3 quay.io/coreos/etcd:v3.3 etcd --name node1 \
+    --initial-advertise-peer-urls http://${NODE1}:2380 --listen-peer-urls http://${NODE1}:2380 \
+    --advertise-client-urls http://${NODE1}:2379 --listen-client-urls http://${NODE1}:2379 \
+    --initial-cluster node1=http://${NODE1}:2380
+  - sudo docker cp etcd3:/usr/local/bin/etcdctl /usr/bin/etcdctl
+  - which etcdctl
 
 # command to install dependencies, e.g. pip install -r requirements.txt --use-mirrors
 install: pip install -U tox-travis
