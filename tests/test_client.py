@@ -31,19 +31,18 @@ def test_request_and_model(client):
 def test_stream(client):
     r = client.call_rpc('/v3alpha/watch', {'create_request': {'key': 'test_key'}}, stream=True)
     times = 3
-    header_times = 1
+    created = False
     for i in r:
         if not times:
             break
+        if not created:
+            created = i.created
+            assert created
         etcdctl('put test_key test_value')
         if hasattr(i, 'events'):
             assert i.events[0].kv.key == b'test_key'
             assert i.events[0].kv.value == b'test_value'
             times -= 1
-        else:
-            header_times -= 1
-            assert header_times >= 0
-    r.close()
 
 
 @pytest.mark.skipif(NO_ETCD_SERVICE, reason="no etcd service available")
@@ -61,17 +60,17 @@ def test_patched_stream(client, monkeypatch):
     monkeypatch.setattr(client._session, 'post', post)
     r = client.call_rpc('/v3alpha/watch', {'create_request': {'key': 'test_key'}}, stream=True)
     times = 3
-    header_times = 1
+    created = False
     for i in r:
         if not times:
             break
+        if not created:
+            created = i.created
+            assert created
         if hasattr(i, 'events'):
             assert i.events[0].kv.key == b'test_key'
             assert i.events[0].kv.value == b'test_value'
             times -= 1
-        else:
-            header_times -= 1
-            assert header_times >= 0
 
 
 def test_patched_request_and_model(client, monkeypatch):

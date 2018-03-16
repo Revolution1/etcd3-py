@@ -54,15 +54,15 @@ async def test_async_request_and_model(aio_client):
 async def test_async_stream(aio_client):
     r = await aio_client.call_rpc('/v3alpha/watch', {'create_request': {'key': 'test_key'}}, stream=True)
     times = 3
-    header_times = 1
+    created = False
     async for i in r:
         if not times:
             break
+        if not created:
+            created = i.created
+            assert created
         etcdctl('put test_key test_value')
         if hasattr(i, 'events'):
             assert i.events[0].kv.key == b'test_key'
             assert i.events[0].kv.value == b'test_value'
             times -= 1
-        else:
-            header_times -= 1
-            assert header_times >= 0

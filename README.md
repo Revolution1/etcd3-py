@@ -27,7 +27,7 @@ Features
 * [x] auto unit testing
 * [ ] support APIs
     * [x] Auth
-    * [ ] KV
+    * [x] KV
     * [ ] Watch
     * [x] Cluster
     * [x] Lease

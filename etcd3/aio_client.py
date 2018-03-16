@@ -50,8 +50,6 @@ class ModelizedStreamResponse(BaseModelizedStreamResponse):
             # {"error":{"grpc_code":14,"http_code":503,"message":"rpc error: code = Unavailable desc = transport is closing","http_status":"Service Unavailable"}}
             err = data.get('error')
             raise get_client_error(err.get('message'), code=err.get('code'), status=err.get('http_code'))
-        if 'result' in data:
-            data = data.get('result', {})  # the real data is put under the key: 'result'
         return AioClient._modelizeResponseData(self.method, data, decode=self.decode)
 
 
@@ -173,7 +171,7 @@ class AioClient(BaseClient):
 
         :type method: str
         :param method: the rpc method, which is a path of RESTful API
-        :type data: dict
+        :type data: dict or str
         :param data: request payload to be post to ETCD's gRPC-JSON-Gateway default: {}
         :type stream: bool
         :param stream: whether return a stream response object, default: False
