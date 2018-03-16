@@ -27,6 +27,7 @@ source =
     etcd3/
 omit =
     etcd3/errors
+    tests/
 
 [html]
 directory = coverage_html_report

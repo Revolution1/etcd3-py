@@ -6,12 +6,30 @@ import json
 import ssl
 
 import aiohttp
+from aiohttp.client import _RequestContextManager
 
 from .baseclient import BaseClient
 from .baseclient import BaseModelizedStreamResponse
 from .errors import Etcd3Exception
 from .errors import Etcd3StreamError
 from .errors import get_client_error
+
+
+class ModelizedResponse(object):
+    def __init__(self, method, resp, decode=True):
+        self._coro = resp
+        self._method = method
+        self._resp = None
+        self._decode = decode
+
+    async def __modelize(self):
+        self._resp = await self._coro
+        await AioClient._raise_for_status(self._resp)
+        data = await self._resp.json()
+        return AioClient._modelizeResponseData(self._method, data, self._decode)
+
+    def __await__(self):
+        return self.__modelize().__await__()
 
 
 class ModelizedStreamResponse(BaseModelizedStreamResponse):
@@ -26,13 +44,22 @@ class ModelizedStreamResponse(BaseModelizedStreamResponse):
         self.resp = resp
         self.decode = decode
         self.method = method
-        self.resp_iter = ResponseIter(resp)
+
+    @property
+    def resp_iter(self):
+        return ResponseIter(self.resp)
 
     def close(self):
         """
         close the stream
         """
         return self.resp.close()
+
+    def __enter__(self):
+        return self
+
+    def __exit__(self, exc_type, exc_val, exc_tb):
+        self.close()
 
     async def __aenter__(self):
         return self
@@ -44,6 +71,9 @@ class ModelizedStreamResponse(BaseModelizedStreamResponse):
         return self
 
     async def __anext__(self):
+        if isinstance(self.resp, _RequestContextManager):
+            self.resp = await self.resp
+            await AioClient._raise_for_status(self.resp)
         data = await self.resp_iter.next()
         data = json.loads(str(data, encoding='utf-8'))
         if data.get('error'):
@@ -125,10 +155,14 @@ class AioClient(BaseClient):
         await self.close()
 
     @classmethod
+    def _modelizeResponse(cls, method, resp, decode=True):
+        return ModelizedResponse(method, resp, decode)
+
+    @classmethod
     def _modelizeStreamResponse(cls, method, resp, decode=True):
         return ModelizedStreamResponse(method, resp, decode)
 
-    async def _get(self, url, **kwargs):
+    def _get(self, url, **kwargs):
         r"""
         Sends a GET request. Returns :class:`Response` object.
 
@@ -136,9 +170,9 @@ class AioClient(BaseClient):
         :param \*\*kwargs: Optional arguments that ``request`` takes.
         :rtype: aiohttp.ClientResponse
         """
-        return await self.session.get(url, **kwargs)
+        return self.session.get(url, **kwargs)
 
-    async def _post(self, url, data=None, json=None, **kwargs):
+    def _post(self, url, data=None, json=None, **kwargs):
         r"""
         Sends a POST request. Returns :class:`Response` object.
 
@@ -148,7 +182,7 @@ class AioClient(BaseClient):
         :param \*\*kwargs: Optional arguments that ``request`` takes.
         :rtype: aiohttp.ClientResponse
         """
-        return await self.session.post(url, data=data, json=json, **kwargs)
+        return self.session.post(url, data=data, json=json, **kwargs)
 
     @staticmethod
     async def _raise_for_status(resp):
@@ -165,7 +199,7 @@ class AioClient(BaseClient):
             code = data.get('code')
         raise get_client_error(error, code, status, resp)
 
-    async def call_rpc(self, method, data=None, stream=False, encode=True, raw=False, **kwargs):
+    def call_rpc(self, method, data=None, stream=False, encode=True, raw=False, **kwargs):
         """
         call ETCDv3 RPC and return response object
 
@@ -188,8 +222,7 @@ class AioClient(BaseClient):
         kwargs.setdefault('headers', {}).update(self.headers)
         if encode:
             data = self._encodeRPCRequest(method, data)
-        resp = await self._post(self._url(method), json=data or {}, **kwargs)
-        await self._raise_for_status(resp)
+        resp = self._post(self._url(method), json=data or {}, **kwargs)
         if raw:
             return resp
         if stream:
@@ -197,9 +230,9 @@ class AioClient(BaseClient):
                 return self._modelizeStreamResponse(method, resp)
             except Etcd3Exception:
                 resp.close()
-        return self._modelizeResponseData(method, await resp.json())
+        return self._modelizeResponse(method, resp)
 
-    def auth(self, username=None, password=None):
+    async def auth(self, username=None, password=None):
         """
         call auth.authenticate and save the token
 
@@ -208,22 +241,16 @@ class AioClient(BaseClient):
         :type password: str
         :param password: password
         """
-        import asyncio
-        loop = asyncio.get_event_loop()
-
-        async def _auth(self, username, password):
-            username = username or self.username
-            password = password or self.password
-            old = self.token
-            self.token = None
-            try:
-                r = await self.authenticate(username, password)
-            except Exception:
-                self.token = old
-                raise
-            else:
-                self.username = username
-                self.password = password
-                self.token = r.token
-
-        loop.run_until_complete(_auth(self, username, password))
+        username = username or self.username
+        password = password or self.password
+        old = self.token
+        self.token = None
+        try:
+            r = await self.authenticate(username, password)
+        except Exception:
+            self.token = old
+            raise
+        else:
+            self.username = username
+            self.password = password
+            self.token = r.token

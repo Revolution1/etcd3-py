@@ -34,6 +34,12 @@ class ModelizedStreamResponse(BaseModelizedStreamResponse):
         """
         return self.resp.close()
 
+    def __enter__(self):
+        return self
+
+    def __exit__(self, exc_type, exc_val, exc_tb):
+        self.close()
+
     def __iter__(self):
         for data in iter_response(self.resp):
             if not data:
