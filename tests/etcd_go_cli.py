@@ -39,6 +39,11 @@ def find_executable(executable, path=None):
                 f = os.path.join(p, execname)
                 if os.path.isfile(f):
                     return f
+        # violent fix of my wired test environment
+        for p in ['/usr/local/bin']:
+            f = os.path.join(p, execname)
+            if os.path.isfile(f):
+                return f
     else:
         return None
 

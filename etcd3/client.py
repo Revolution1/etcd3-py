@@ -45,8 +45,6 @@ class ModelizedStreamResponse(BaseModelizedStreamResponse):
                 # {"error":{"grpc_code":14,"http_code":503,"message":"rpc error: code = Unavailable desc = transport is closing","http_status":"Service Unavailable"}}
                 err = data.get('error')
                 raise get_client_error(err.get('message'), code=err.get('code'), status=err.get('http_code'))
-            if 'result' in data:
-                data = data.get('result', {})  # the real data is put under the key: 'result'
             yield Client._modelizeResponseData(self.method, data, decode=self.decode)
 
 

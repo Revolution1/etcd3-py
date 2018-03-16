@@ -53,6 +53,8 @@ class LeaseAPI(BaseAPI):
     # http://docs.python-requests.org/en/master/user/advanced/#chunk-encoded-requests
     def lease_keep_alive(self, ID):
         """
+        PLEASE USE THE Transaction util
+
         LeaseKeepAlive keeps the lease alive by streaming keep alive requests from the client
         to the server and streaming keep alive responses from the server to the client.
 
@@ -63,4 +65,18 @@ class LeaseAPI(BaseAPI):
         data = {
             "ID": ID
         }
-        return self.call_rpc(method, data=data)
+        return self.call_rpc(method, data=data, stream=True)
+
+    def lease_keep_alive_once(self, ID):
+        """
+        this api only send keep alive once instead of streaming send multiple IDs
+
+        LeaseKeepAlive keeps the lease alive by streaming keep alive requests from the client
+        to the server and streaming keep alive responses from the server to the client.
+
+        :type ID: int
+        :param ID: ID is the lease ID for the lease to keep alive.
+        """
+
+        for i in self.lease_keep_alive(ID):
+            return i

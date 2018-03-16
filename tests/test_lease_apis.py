@@ -5,7 +5,7 @@ import pytest
 
 from etcd3.client import Client
 from .envs import protocol, host, port
-from .etcd_go_cli import NO_ETCD_SERVICE
+from .etcd_go_cli import NO_ETCD_SERVICE, etcdctl
 
 
 @pytest.fixture(scope='module')
@@ -29,19 +29,22 @@ def test_lease_flow(client):
     TTL = 60
     r = client.lease_grant(TTL, ID=ID)
     assert r.ID == ID
-    # TODO: test lease keys
 
+    hexid = hex(ID)[2:]
+    etcdctl('put --lease=%s foo bar' % hexid)
+    etcdctl('put --lease=%s fizz buzz' % hexid)
     time.sleep(1)
-    r = client.lease_time_to_live(ID)
+    r = client.lease_time_to_live(ID, keys=True)
     assert r.ID == ID
     assert r.grantedTTL == TTL
     assert r.TTL < TTL
+    assert set(r.keys) == {b'foo', b'fizz'}
 
-    old_ttl = client.lease_time_to_live(ID).TTL
-    # fixme: keepalive always return nothing, need to figure out why
-    assert client.lease_keep_alive(ID)
-    # assert r.TTL >= TTL - 1
-    assert client.lease_time_to_live(ID).TTL >= old_ttl
-
+    for i in client.lease_keep_alive(ID):
+        assert i.ID == ID
+        assert i.TTL == TTL
+    r = client.lease_keep_alive_once(ID)
+    assert r.ID == ID
+    assert r.TTL == TTL
     assert client.lease_revoke(ID)
     assert client.lease_time_to_live(ID).TTL == -1

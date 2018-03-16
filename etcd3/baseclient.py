@@ -94,6 +94,8 @@ class BaseClient(AuthAPI, ClusterAPI, KVAPI, LeaseAPI, MaintenanceAPI, WatchAPI,
 
     @classmethod
     def _modelizeResponseData(cls, method, data, decode=True):
+        if len(data) == 1 and 'result' in data:
+            data = data.get('result', {})  # the data of stream is put under the key: 'result'
         if decode:
             data = cls._decodeRPCResponseData(method, data)
         swpath = swaggerSpec.getPath(method)
