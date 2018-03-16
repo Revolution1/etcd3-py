@@ -29,20 +29,20 @@ def test_request_and_model(client):
 
 @pytest.mark.skipif(NO_ETCD_SERVICE, reason="no etcd service available")
 def test_stream(client):
-    r = client.call_rpc('/v3alpha/watch', {'create_request': {'key': 'test_key'}}, stream=True)
-    times = 3
+    times = 20
     created = False
-    for i in r:
-        if not times:
-            break
-        if not created:
-            created = i.created
-            assert created
-        etcdctl('put test_key test_value')
-        if hasattr(i, 'events'):
-            assert i.events[0].kv.key == b'test_key'
-            assert i.events[0].kv.value == b'test_value'
-            times -= 1
+    with client.call_rpc('/v3alpha/watch', {'create_request': {'key': 'test_key'}}, stream=True) as r:
+        for i in r:
+            if not times:
+                break
+            if not created:
+                created = i.created
+                assert created
+            etcdctl('put test_key test_value')
+            if hasattr(i, 'events'):
+                assert i.events[0].kv.key == b'test_key'
+                assert i.events[0].kv.value == b'test_value'
+                times -= 1
 
 
 @pytest.mark.skipif(NO_ETCD_SERVICE, reason="no etcd service available")
@@ -58,19 +58,19 @@ def test_patched_stream(client, monkeypatch):
         b'{"result": {"header": {"raft_term": 7, "member_id": 128088275939295631, "cluster_id": 11588568905070377092, "revision": 381}, "events": [{"kv": {"mod_revision": 381, "value": "dGVzdF92YWx1ZQ==", "create_revision": 379, "version": 3, "key": "dGVzdF9rZXk="}}]}}'
     post = fake_request(200, s)
     monkeypatch.setattr(client._session, 'post', post)
-    r = client.call_rpc('/v3alpha/watch', {'create_request': {'key': 'test_key'}}, stream=True)
     times = 3
     created = False
-    for i in r:
-        if not times:
-            break
-        if not created:
-            created = i.created
-            assert created
-        if hasattr(i, 'events'):
-            assert i.events[0].kv.key == b'test_key'
-            assert i.events[0].kv.value == b'test_value'
-            times -= 1
+    with client.call_rpc('/v3alpha/watch', {'create_request': {'key': 'test_key'}}, stream=True) as r:
+        for i in r:
+            if not times:
+                break
+            if not created:
+                created = i.created
+                assert created
+            if hasattr(i, 'events'):
+                assert i.events[0].kv.key == b'test_key'
+                assert i.events[0].kv.value == b'test_value'
+                times -= 1
 
 
 def test_patched_request_and_model(client, monkeypatch):

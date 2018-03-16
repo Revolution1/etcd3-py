@@ -64,3 +64,4 @@ target/
 
 etcd3/apis_generated/
 coverage_html_report/
+prof/

@@ -1,4 +1,7 @@
+import json
+
 import pytest
+import six
 
 from etcd3.client import Client
 from etcd3.models import RangeRequestSortOrder
@@ -74,6 +77,15 @@ def test_delete(client, request):
     assert len(client.range('fo', prefix=True).kvs) == 2
     client.delete_range('fo', prefix=True)
     assert 'kvs' not in client.range('fo', prefix=True)
+
+
+@pytest.mark.skipif(NO_ETCD_SERVICE, reason="no etcd service available")
+def test_delete(client, request):
+    out = etcdctl('put some thing', json=True)
+    if six.PY3:
+        out = six.text_type(out, encoding='utf-8')
+    rev = json.loads(out)['header']['revision']
+    assert client.compact(rev, physical=False)
 
 
 @pytest.mark.skipif(NO_ETCD_SERVICE, reason="no etcd service available")

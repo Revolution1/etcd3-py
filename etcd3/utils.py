@@ -7,7 +7,6 @@ try:
     from inspect import getfullargspec as getargspec
 except ImportError:
     from inspect import getargspec
-
 import six
 from six import wraps
 
@@ -237,7 +236,51 @@ def run_coro(coro):
     :type coro: asyncio.coroutine
     :param coro: the coroutine to run
     """
-    try:
-        coro.send(None)
-    except StopIteration as e:
-        return e.value
+    import asyncio
+
+    loop = asyncio.get_event_loop()
+    return loop.run_until_complete(coro)
+
+
+class cached_property(object):
+    """A property that is only computed once per instance and then replaces
+       itself with an ordinary attribute. Deleting the attribute resets the
+       property.
+
+       Source: https://github.com/bottlepy/bottle/blob/0.11.5/bottle.py#L175
+    """
+
+    def __init__(self, func):
+        self.__doc__ = getattr(func, '__doc__')
+        self.func = func
+
+    def __get__(self, obj, cls):
+        if obj is None:
+            # We're being accessed from the class itself, not from an object
+            return self
+        value = obj.__dict__[self.func.__name__] = self.func(obj)
+        return value
+
+
+_lb = b'{'
+_rb = b'}'
+if six.PY3:
+    _lb = ord(_lb)
+    _rb = ord(_rb)
+
+
+def iter_json_string(chunk, start=0, lb=_lb, rb=_rb, resp=None, err_cls=ValueError):
+    last_i = 0
+    bracket_flag = 0
+    for i, c in enumerate(chunk, start=start):
+        if c == lb:  # b'{'
+            bracket_flag += 1
+        elif c == rb:  # b'}'
+            bracket_flag -= 1
+        if bracket_flag == 0:
+            s = chunk[last_i:i + 1]
+            last_i = i + 1
+            yield True, s, i
+        elif bracket_flag < 0:
+            raise err_cls("Stream decode error", chunk, resp)
+    yield False, chunk[last_i:], last_i - 1
