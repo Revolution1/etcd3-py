@@ -44,3 +44,9 @@ Quick Start
 >>> client.version()
 EtcdVersion(etcdserver='3.3.0-rc.4', etcdcluster='3.3.0')
 ```
+
+TODO
+====
+
+- [ ] performance test
+- [ ] extract request response models to improve performance

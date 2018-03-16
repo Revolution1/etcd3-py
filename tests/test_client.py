@@ -29,7 +29,7 @@ def test_request_and_model(client):
 
 @pytest.mark.skipif(NO_ETCD_SERVICE, reason="no etcd service available")
 def test_stream(client):
-    times = 3
+    times = 20
     created = False
     with client.call_rpc('/v3alpha/watch', {'create_request': {'key': 'test_key'}}, stream=True) as r:
         for i in r:

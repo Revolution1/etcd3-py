@@ -52,7 +52,7 @@ async def test_async_request_and_model(aio_client):
 @pytest.mark.skipif(NO_ETCD_SERVICE, reason="no etcd service available")
 @pytest.mark.asyncio
 async def test_async_stream(aio_client):
-    times = 3
+    times = 20
     created = False
     # async with and with both works
     async with aio_client.call_rpc('/v3alpha/watch', {'create_request': {'key': 'test_key'}}, stream=True) as r:

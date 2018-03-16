@@ -13,6 +13,7 @@ from .baseclient import BaseModelizedStreamResponse
 from .errors import Etcd3Exception
 from .errors import Etcd3StreamError
 from .errors import get_client_error
+from .utils import iter_json_string
 
 
 class ModelizedStreamResponse(BaseModelizedStreamResponse):
@@ -64,23 +65,28 @@ def iter_response(resp):
 
     :param resp: Response
     :return: dict
+
+    find object:
+
+
+    for chunk in response:
+        chunk =
+        ok, start, end = find_object(chunk, start)
+        if ok:
+            yield chunk[start:end]
+        else:
+            buf.append(chunk)
     """
-    buf = []
-    bracket_flag = 0
-    for c in resp.iter_content(chunk_size=1):
-        buf.append(c)
-        if c == b'{':
-            bracket_flag += 1
-        elif c == b'}':
-            bracket_flag -= 1
-        if bracket_flag == 0:
-            s = b''.join(buf)
-            buf = []
-            yield s
-        elif bracket_flag < 0:
-            raise Etcd3StreamError("Stream decode error", buf, resp)
-    if buf:
-        raise Etcd3StreamError("Stream decode error", buf, resp)
+    left_chunk = b''
+    for chunk in resp.iter_content(chunk_size=2048):
+        chunk = left_chunk + chunk
+        for ok, s, _ in iter_json_string(chunk, resp=resp, err_cls=Etcd3StreamError):
+            if ok:
+                yield s
+            else:
+                left_chunk = s
+    if left_chunk:
+        raise Etcd3StreamError("Stream decode error", left_chunk, resp)
 
 
 class Client(BaseClient):

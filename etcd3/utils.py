@@ -7,7 +7,6 @@ try:
     from inspect import getfullargspec as getargspec
 except ImportError:
     from inspect import getargspec
-import asyncio
 import six
 from six import wraps
 
@@ -237,6 +236,8 @@ def run_coro(coro):
     :type coro: asyncio.coroutine
     :param coro: the coroutine to run
     """
+    import asyncio
+
     loop = asyncio.get_event_loop()
     return loop.run_until_complete(coro)
 
@@ -261,10 +262,25 @@ class cached_property(object):
         return value
 
 
-if __name__ == '__main__':
-    async def f():
-        return 'OK'
+_lb = b'{'
+_rb = b'}'
+if six.PY3:
+    _lb = ord(_lb)
+    _rb = ord(_rb)
 
 
-    a = run_coro(f())
-    print(a)
+def iter_json_string(chunk, start=0, lb=_lb, rb=_rb, resp=None, err_cls=ValueError):
+    last_i = 0
+    bracket_flag = 0
+    for i, c in enumerate(chunk, start=start):
+        if c == lb:  # b'{'
+            bracket_flag += 1
+        elif c == rb:  # b'}'
+            bracket_flag -= 1
+        if bracket_flag == 0:
+            s = chunk[last_i:i + 1]
+            last_i = i + 1
+            yield True, s, i
+        elif bracket_flag < 0:
+            raise err_cls("Stream decode error", chunk, resp)
+    yield False, chunk[last_i:], last_i - 1

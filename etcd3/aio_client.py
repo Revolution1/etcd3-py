@@ -13,6 +13,7 @@ from .baseclient import BaseModelizedStreamResponse
 from .errors import Etcd3Exception
 from .errors import Etcd3StreamError
 from .errors import get_client_error
+from .utils import iter_json_string
 
 
 class ModelizedResponse(object):
@@ -99,28 +100,26 @@ class ResponseIter():
         self.resp = resp
         self.buf = []
         self.bracket_flag = 0
+        self.left_chunk = b''
+        self.i = 0
 
     async def __aiter__(self):
         return self
 
     async def next(self):
         while True:
-            c = await self.resp.content.read(1)
-            if not c:
-                if self.buf:
-                    raise Etcd3StreamError("Stream decode error", self.buf, self.resp)
-                raise StopAsyncIteration
-            self.buf.append(c)
-            if c == b'{':
-                self.bracket_flag += 1
-            elif c == b'}':
-                self.bracket_flag -= 1
-            if self.bracket_flag == 0:
-                s = b''.join(self.buf)
-                self.buf = []
-                return s
-            elif self.bracket_flag < 0:
-                raise Etcd3StreamError("Stream decode error", self.buf, self.resp)
+            chunk = self.left_chunk
+            for ok, s, i in iter_json_string(chunk, start=self.i, resp=self.resp, err_cls=Etcd3StreamError):
+                if ok:
+                    self.i = i
+                    return s
+                else:
+                    self.i = 0
+                    self.left_chunk += await self.resp.content.readany()
+                    if not self.left_chunk:
+                        if self.buf:
+                            raise Etcd3StreamError("Stream decode error", self.buf, self.resp)
+                        raise StopAsyncIteration
 
     __anext__ = next
 
