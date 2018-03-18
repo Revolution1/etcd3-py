@@ -2,6 +2,7 @@
 # -*- coding: utf-8 -*-
 
 """The setup script."""
+import os
 import platform
 
 from pip.req import parse_requirements
@@ -9,7 +10,10 @@ from setuptools import setup, find_packages
 
 PY2 = platform.python_version_tuple()[0] == '2'
 
-with open('README.md') as readme_file:
+readme_path = 'README.md'
+if os.path.isfile('README.rst'):
+    readme_path = 'README.rst'
+with open(readme_path) as readme_file:
     readme = readme_file.read()
 
 with open('HISTORY.rst') as history_file:
