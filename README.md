@@ -18,35 +18,65 @@ Notice: The authentication header through gRPC-JSON-Gateway only supported in [e
 Features
 ========
 
-* [x] support python2.7 and python3.5+
-* [x] sync client based on requests
-* [x] async client based on aiohttp
-* [x] support etcd3 gRPC-JSON-Gateway including stream
-* [x] response modelizing based on etcd3's swagger spec
-* [x] generate code from swagger spec
-* [x] auto unit testing
-* [ ] support APIs
+* [x] Support python2.7 and python3.5+
+* [x] Sync client based on requests
+* [x] Async client based on aiohttp
+* [x] Support etcd3 gRPC-JSON-Gateway including stream
+* [x] Response modelizing based on etcd3's swagger spec
+* [x] Generate code from swagger spec
+* [ ] TLS Connection
+* [x] support APIs
     * [x] Auth
     * [x] KV
-    * [ ] Watch
+    * [x] Watch
     * [x] Cluster
     * [x] Lease
     * [x] Maintenance
     * [x] Extra APIs
+* [ ] stateful utilities
+    * [ ] Watch
+    * [ ] Lease
+    * [ ] Transaction
+    * [ ] Lock
 
 Quick Start
 ===========
 
-**Async Client**
+**Install**
+```bash
+$ pip install etcd3-py
+```
+
+**Sync Client**
 ```python
 >>> from etcd3 import Client
 >>> client = Client('127.0.0.1', 2379)
 >>> client.version()
 EtcdVersion(etcdserver='3.3.0-rc.4', etcdcluster='3.3.0')
+>>> client.put('foo', 'bar')
+etcdserverpbPutResponse(header=etcdserverpbResponseHeader(cluster_id=11588568905070377092, member_id=128088275939295631, revision=15433, raft_term=4))
+>>> client.range('foo').kvs
+[mvccpbKeyValue(key=b'foo', create_revision=15429, mod_revision=15433, version=5, value=b'bar')]
 ```
+
+**Async Client (Python3.5+)**
+```python
+>>> import asyncio
+>>> from etcd3 import AioClient
+>>> client = AioClient('127.0.0.1', 2379)
+>>> async def getFoo():
+...     await client.put('foo', 'bar')
+...     r = await client.range('foo')
+...     print('key:', r.kvs[0].key, 'value:', r.kvs[0].value)
+>>> loop = asyncio.get_event_loop()
+>>> loop.run_until_complete(getFoo())
+key: b'foo' value: b'bar'
+```
+
 
 TODO
 ====
 
-- [ ] performance test
-- [ ] extract request response models to improve performance
+- [ ] benchmark
+- [ ] python-etcd(etcd v2) compatible client
+- [ ] etcd browser

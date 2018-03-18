@@ -210,7 +210,7 @@ class SwaggerSpec(object):
             return super(SwaggerSpec, self).__getattribute__(key)
 
     def __dir__(self):
-        return [k for k in type(self).__dict__.keys() if not k.startswith('__')] + self.spec.keys()
+        return [k for k in type(self).__dict__.keys() if not k.startswith('__')] + list(self.spec.keys())
 
     def __repr__(self):
         return "<SwaggerSpec '%s'>" % self.spec.get('info', {}).get('title')
