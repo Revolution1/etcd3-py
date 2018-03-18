@@ -1,4 +1,4 @@
-etcd3-py (Developing)
+etcd3-py
 ---------------------
 
 [![pypi](https://img.shields.io/pypi/v/etcd3-py.svg)](https://pypi.python.org/pypi/etcd3-py)
