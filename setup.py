@@ -20,10 +20,12 @@ with open('HISTORY.rst') as history_file:
     history = history_file.read()
 
 # parse_requirements() returns generator of pip.req.InstallRequirement objects
-if PY2:
-    install_reqs = parse_requirements('requirements.txt', session='')
-else:
-    install_reqs = parse_requirements('requirements_py3.txt', session='')
+# if PY2:
+#     install_reqs = parse_requirements('requirements.txt', session='')
+# else:
+#     install_reqs = parse_requirements('requirements_py3.txt', session='')
+
+install_reqs = parse_requirements('requirements.txt', session='')
 
 # reqs is a list of requirement
 requirements = [str(ir.req) for ir in install_reqs]
@@ -42,7 +44,7 @@ test_requirements = list({str(ir.req) for ir in test_reqs} - set(requirements))
 setup(
     name='etcd3-py',
     version='0.1.1',
-    description="Python client for etcd v3 (Using grpc-json-gateway) Edit",
+    description="Python client for etcd v3 (Using gRPC-JSON-Gateway)",
     long_description=readme + '\n\n' + history,
     author="Renjie Cai",
     author_email='revol.cai@gmail.com',
@@ -59,10 +61,11 @@ setup(
     include_package_data=True,
     install_requires=requirements,
     license="Apache Software License 2.0",
+    python_requires='>=2.7',
     zip_safe=False,
     keywords='etcd3',
     classifiers=[
-        'Development Status :: 2 - Pre-Alpha',
+        'Development Status :: 3 - Alpha',
         'Intended Audience :: Developers',
         'License :: OSI Approved :: Apache Software License',
         'Natural Language :: English',
@@ -73,4 +76,9 @@ setup(
     test_suite='tests',
     tests_require=test_requirements,
     setup_requires=setup_requirements,
+    extras_require={
+        ':python_version >= "3.5"': [
+            'aiohttp',
+        ],
+    },
 )
