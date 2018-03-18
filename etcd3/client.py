@@ -65,17 +65,6 @@ def iter_response(resp):
 
     :param resp: Response
     :return: dict
-
-    find object:
-
-
-    for chunk in response:
-        chunk =
-        ok, start, end = find_object(chunk, start)
-        if ok:
-            yield chunk[start:end]
-        else:
-            buf.append(chunk)
     """
     left_chunk = b''
     for chunk in resp.iter_content(chunk_size=2048):
