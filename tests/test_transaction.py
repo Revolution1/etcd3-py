@@ -17,7 +17,7 @@ def client():
 
 
 @pytest.mark.skipif(NO_ETCD_SERVICE, reason="no etcd service available")
-def test_version_api(client):
+def test_transaction(client):
     etcdctl('put foo bar')
     txn = Txn(client)
     txn.compare(txn.key('foo').value == 'bar')
@@ -35,6 +35,8 @@ def test_version_api(client):
     etcdctl('put foo 2')
     txn = Txn(client)
     txn.compare(txn.key('foo').value > b'1')
+    txn.compare(txn.key('foo').value < b'3')
+    txn.compare(txn.key('foo').value != b'0')
     txn.success(txn.put('foo', 'bra'))
     r = txn.commit()
     assert r.succeeded
