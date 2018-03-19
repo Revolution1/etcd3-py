@@ -3,6 +3,8 @@ import itertools
 from collections import namedtuple, OrderedDict, Hashable
 from threading import Lock
 
+import enum
+
 try:
     from inspect import getfullargspec as getargspec
 except ImportError:
@@ -13,7 +15,7 @@ from six import wraps
 _CacheInfo = namedtuple("CacheInfo", "hits misses maxsize currsize")
 
 if six.PY2:
-    class OrderedDictEx(OrderedDict):
+    class OrderedDictEx(OrderedDict): # pragma: no cover
         """
         On python2, this is a OrderedDict with extended method 'move_to_end'
         that is compatible with collections.OrderedDict in python3
@@ -35,7 +37,7 @@ else:
     OrderedDictEx = OrderedDict
 
 
-def lru_cache(maxsize=100):
+def lru_cache(maxsize=100): # pragma: no cover
     """Least-recently-used cache decorator.
 
     If *maxsize* is set to None, the LRU features are disabled and the cache
@@ -125,7 +127,7 @@ def lru_cache(maxsize=100):
     return decorating_function
 
 
-def memoize(fn):
+def memoize(fn): # pragma: no cover
     '''
     Decorator. Caches a function's return value each time it is called.
     If called later with the same arguments, the cached value is returned
@@ -231,7 +233,7 @@ def check_param(at_least_one_of=None, at_most_one_of=None):
     return deco
 
 
-def run_coro(coro):
+def run_coro(coro): # pragma: no cover
     """
     :type coro: asyncio.coroutine
     :param coro: the coroutine to run
@@ -284,3 +286,9 @@ def iter_json_string(chunk, start=0, lb=_lb, rb=_rb, resp=None, err_cls=ValueErr
         elif bracket_flag < 0:
             raise err_cls("Stream decode error", chunk, resp)
     yield False, chunk[last_i:], last_i - 1
+
+
+def _enum_value(e):
+    if isinstance(e, enum.Enum):
+        return e.value
+    return e

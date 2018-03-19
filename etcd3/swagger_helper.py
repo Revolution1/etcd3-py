@@ -93,7 +93,7 @@ class SwaggerSpec(object):
         else:
             try:
                 self.spec = json.loads(spec_content, object_pairs_hook=OrderedDict)
-            except Exception:
+            except Exception: # pragma: no cover
                 if not yaml:
                     raise ImportError("No module named yaml")
                 try:
@@ -517,7 +517,7 @@ class SwaggerNode(object):
         return "SwaggerNode(ref='%s')" % self._ref
 
 
-if __name__ == '__main__':
+if __name__ == '__main__': # pragma: no cover
     with open(os.path.join(os.path.dirname(__file__), 'rpc.swagger.json')) as f:
         spec = json.load(f)
     sh = SwaggerSpec(spec)

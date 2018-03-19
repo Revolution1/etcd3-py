@@ -17,3 +17,9 @@ __all__.extend([
     'Client',
     'AioClient'
 ])
+
+from .stateful import Txn
+
+__all__.extend([
+    'Txn'
+])
