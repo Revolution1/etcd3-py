@@ -37,13 +37,19 @@ class Txn(object):
         self._compare.append(compareOp)
         return self
 
+    If = compare
+
     def success(self, successOp):
         self._success.append(successOp)
         return self
 
+    Then = success
+
     def failure(self, failureOp):
         self._failure.append(failureOp)
         return self
+
+    Else = failure
 
     def commit(self):
         return self.client.txn(compare=self._compare, success=self._success, failure=self._failure)

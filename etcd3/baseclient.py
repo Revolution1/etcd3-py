@@ -14,6 +14,8 @@ from .apis import KVAPI
 from .apis import LeaseAPI
 from .apis import MaintenanceAPI
 from .apis import WatchAPI
+from .stateful import Lease
+from .stateful import Txn
 from .swagger_helper import SwaggerSpec
 from .version import __version__
 
@@ -167,3 +169,9 @@ class BaseClient(AuthAPI, ClusterAPI, KVAPI, LeaseAPI, MaintenanceAPI, WatchAPI,
         :param password: password
         """
         pass
+
+    def Txn(self):
+        return Txn(self)
+
+    def Lease(self, ttl, ID=0, new=True):
+        return Lease(self, ttl=ttl, ID=ID, new=new)

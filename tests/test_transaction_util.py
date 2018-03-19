@@ -27,17 +27,18 @@ def test_transaction(client):
     assert client.range('foo').kvs[0].value == b'bra'
 
     txn = Txn(client)
-    txn.compare(txn.key('foo').value == 'bar')
-    txn.failure(txn.put('foo', 'bar'))
+    txn.If(txn.key('foo').value == 'bar')
+    txn.Then(txn.put('foo', 'bra'))
+    txn.Else(txn.put('foo', 'bar'))
     txn.commit()
     assert client.range('foo').kvs[0].value == b'bar'
 
     etcdctl('put foo 2')
     txn = Txn(client)
-    txn.compare(txn.key('foo').value > b'1')
-    txn.compare(txn.key('foo').value < b'3')
-    txn.compare(txn.key('foo').value != b'0')
-    txn.success(txn.put('foo', 'bra'))
+    txn.If(txn.key('foo').value > b'1')
+    txn.If(txn.key('foo').value < b'3')
+    txn.If(txn.key('foo').value != b'0')
+    txn.Then(txn.put('foo', 'bra'))
     r = txn.commit()
     assert r.succeeded
     assert client.range('foo').kvs[0].value == b'bra'

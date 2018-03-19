@@ -1,9 +1,10 @@
+import enum
 import functools
 import itertools
+import logging
+import time
 from collections import namedtuple, OrderedDict, Hashable
 from threading import Lock
-
-import enum
 
 try:
     from inspect import getfullargspec as getargspec
@@ -15,7 +16,7 @@ from six import wraps
 _CacheInfo = namedtuple("CacheInfo", "hits misses maxsize currsize")
 
 if six.PY2:
-    class OrderedDictEx(OrderedDict): # pragma: no cover
+    class OrderedDictEx(OrderedDict):  # pragma: no cover
         """
         On python2, this is a OrderedDict with extended method 'move_to_end'
         that is compatible with collections.OrderedDict in python3
@@ -37,7 +38,7 @@ else:
     OrderedDictEx = OrderedDict
 
 
-def lru_cache(maxsize=100): # pragma: no cover
+def lru_cache(maxsize=100):  # pragma: no cover
     """Least-recently-used cache decorator.
 
     If *maxsize* is set to None, the LRU features are disabled and the cache
@@ -127,7 +128,7 @@ def lru_cache(maxsize=100): # pragma: no cover
     return decorating_function
 
 
-def memoize(fn): # pragma: no cover
+def memoize(fn):  # pragma: no cover
     '''
     Decorator. Caches a function's return value each time it is called.
     If called later with the same arguments, the cached value is returned
@@ -233,7 +234,7 @@ def check_param(at_least_one_of=None, at_most_one_of=None):
     return deco
 
 
-def run_coro(coro): # pragma: no cover
+def run_coro(coro):  # pragma: no cover
     """
     :type coro: asyncio.coroutine
     :param coro: the coroutine to run
@@ -274,17 +275,22 @@ if six.PY3:
 def iter_json_string(chunk, start=0, lb=_lb, rb=_rb, resp=None, err_cls=ValueError):
     last_i = 0
     bracket_flag = 0
-    for i, c in enumerate(chunk, start=start):
-        if c == lb:  # b'{'
-            bracket_flag += 1
-        elif c == rb:  # b'}'
-            bracket_flag -= 1
-        if bracket_flag == 0:
-            s = chunk[last_i:i + 1]
-            last_i = i + 1
-            yield True, s, i
-        elif bracket_flag < 0:
-            raise err_cls("Stream decode error", chunk, resp)
+    # hack to improve performance
+    if chunk.startswith(b'{"result":') and chunk[-1] == rb and chunk.count(b'{"result":') == 1:
+        last_i = len(chunk)
+        yield True, chunk, 0
+    else:
+        for i, c in enumerate(chunk, start=start):
+            if c == lb:  # b'{'
+                bracket_flag += 1
+            elif c == rb:  # b'}'
+                bracket_flag -= 1
+            if bracket_flag == 0:
+                s = chunk[last_i:i + 1]
+                last_i = i + 1
+                yield True, s, i
+            elif bracket_flag < 0:
+                raise err_cls("Stream decode error", chunk, resp)
     yield False, chunk[last_i:], last_i - 1
 
 
@@ -292,3 +298,18 @@ def _enum_value(e):
     if isinstance(e, enum.Enum):
         return e.value
     return e
+
+
+def retry(func, max_tries=3, log=logging):
+    i = 1
+    while True:
+        try:
+            time.sleep(0.3)
+            func()
+            break
+        except Exception as e:
+            if i < max_tries:
+                log.debug("try function failed (times:%d) retrying %s" % (i, e))
+                i += 1
+            else:
+                raise

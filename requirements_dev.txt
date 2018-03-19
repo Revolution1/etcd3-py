@@ -14,4 +14,4 @@ pytest-cov==2.5.1
 pytest-runner>=2.11.1
 inflection>=0.3.1
 isort==4.3.4
-yapf==0.21.0
+yapf>=0.20.0

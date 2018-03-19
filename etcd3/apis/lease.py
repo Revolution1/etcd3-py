@@ -38,7 +38,7 @@ class LeaseAPI(BaseAPI):
         deleted if the lease expires. Each expired key generates a delete event in the event history.
 
         :type TTL: int
-        :param TTL: TTL is the advisory time-to-live in seconds.
+        :param TTL: TTL is the advisory time-to-live in seconds. the minimum value is 2s
         :type ID: int
         :param ID: ID is the requested ID for the lease. If ID is set to 0, the lessor chooses an ID.
         """
@@ -51,20 +51,16 @@ class LeaseAPI(BaseAPI):
 
     # TODO: stream keepalive with context
     # http://docs.python-requests.org/en/master/user/advanced/#chunk-encoded-requests
-    def lease_keep_alive(self, ID):
+    def lease_keep_alive(self, data):
         """
-        PLEASE USE THE Transaction util
+        PLEASE USE THE TRANSACTION UTIL
 
         LeaseKeepAlive keeps the lease alive by streaming keep alive requests from the client
         to the server and streaming keep alive responses from the server to the client.
 
-        :type ID: int
-        :param ID: ID is the lease ID for the lease to keep alive.
+        :param data: ID stream inputs of the lease to keep alive. which not works for now
         """
         method = '/v3alpha/lease/keepalive'
-        data = {
-            "ID": ID
-        }
         return self.call_rpc(method, data=data, stream=True)
 
     def lease_keep_alive_once(self, ID):
@@ -78,5 +74,5 @@ class LeaseAPI(BaseAPI):
         :param ID: ID is the lease ID for the lease to keep alive.
         """
 
-        for i in self.lease_keep_alive(ID):
+        for i in self.lease_keep_alive(b'{"ID":%d}\n' % ID):
             return i

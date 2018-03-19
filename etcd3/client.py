@@ -175,9 +175,12 @@ class Client(BaseClient):
             kwargs.setdefault('headers', {}).setdefault('authorization', self.token)
         kwargs.setdefault('headers', {}).setdefault('user_agent', self.user_agent)
         kwargs.setdefault('headers', {}).update(self.headers)
-        if encode:
-            data = self._encodeRPCRequest(method, data)
-        resp = self._post(self._url(method), json=data or {}, stream=stream, **kwargs)
+        if isinstance(data, dict):
+            if encode:
+                data = self._encodeRPCRequest(method, data)
+            resp = self._post(self._url(method), json=data or {}, stream=stream, **kwargs)
+        else:
+            resp = self._post(self._url(method), data=data, stream=stream, **kwargs)
         self._raise_for_status(resp)
         if raw:
             return resp

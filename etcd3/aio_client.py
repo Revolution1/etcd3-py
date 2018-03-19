@@ -219,9 +219,12 @@ class AioClient(BaseClient):
             kwargs.setdefault('headers', {}).setdefault('authorization', self.token)
         kwargs.setdefault('headers', {}).setdefault('user_agent', self.user_agent)
         kwargs.setdefault('headers', {}).update(self.headers)
-        if encode:
-            data = self._encodeRPCRequest(method, data)
-        resp = self._post(self._url(method), json=data or {}, **kwargs)
+        if isinstance(data, dict):
+            if encode:
+                data = self._encodeRPCRequest(method, data)
+            resp = self._post(self._url(method), json=data or {}, **kwargs)
+        else:
+            resp = self._post(self._url(method), data=data, **kwargs)
         if raw:
             return resp
         if stream:

@@ -34,7 +34,7 @@ Notice: The authentication header through gRPC-JSON-Gateway only supported in [e
     * [x] Extra APIs
 * [ ] stateful utilities
     * [ ] Watch
-    * [ ] Lease
+    * [x] Lease
     * [x] Transaction
     * [ ] Lock
 
@@ -75,12 +75,24 @@ key: b'foo' value: b'bar'
 
 **Transaction Util**
 ```python
->>> from etcd3 import Client, Txn
->>> txn = Txn(Client())
+>>> from etcd3 import Client
+>>> txn = Client().Txn()
 >>> txn.compare(txn.key('foo').value == 'bar')
 >>> txn.success(txn.put('foo', 'bra'))
 >>> txn.commit()
 etcdserverpbTxnResponse(header=etcdserverpbResponseHeader(cluster_id=11588568905070377092, member_id=128088275939295631, revision=15656, raft_term=4), succeeded=True, responses=[etcdserverpbResponseOp(response_put=etcdserverpbPutResponse(header=etcdserverpbResponseHeader(revision=15656)))])
+```
+
+**Lease Util**
+```python
+>>> from etcd3 import Client
+>>> client = Client()
+>>> with client.Lease(ttl=5) as lease:
+...     client.put('foo', 'bar', lease=lease.ID)
+...     client.put('fizz', 'buzz', lease=lease.ID)
+...     r = lease.time_to_live(keys=True)
+...     assert set(r.keys) == {b'foo', b'fizz'}
+...     assert lease.alive()
 ```
 
 ## TODO

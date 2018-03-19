@@ -18,13 +18,18 @@ try:
 except ImportError:
     yaml = None
 
-if six.PY2:
+if six.PY2:  # pragma: no cover
     file_types = file, io.IOBase  # noqa: F821
 else:
     file_types = (io.IOBase,)
 
+try:
+    from .models import name_to_model
+except ImportError:
+    name_to_model = {}
 
-def swagger_escape(s):
+
+def swagger_escape(s):  # pragma: no cover
     """
     / and ~ are special characters in JSON Pointers,
     and need to be escaped when used literally (for example, in path names).
@@ -93,7 +98,7 @@ class SwaggerSpec(object):
         else:
             try:
                 self.spec = json.loads(spec_content, object_pairs_hook=OrderedDict)
-            except Exception: # pragma: no cover
+            except Exception:  # pragma: no cover
                 if not yaml:
                     raise ImportError("No module named yaml")
                 try:
@@ -405,10 +410,16 @@ class SwaggerNode(object):
                     return rt
 
                 def decode(data):
-                    return PROP_DECODERS[self.format](PROP_DECODERS[self.type](data))
+                    r = PROP_DECODERS[self.format](PROP_DECODERS[self.type](data))
+                    if self._is_enum:
+                        m = name_to_model.get(self._path[-1])
+                        if m:
+                            r = m(r)
+                    return r
 
                 def getModel():
-                    return lambda x: x.value if isinstance(x, enum.Enum) else x
+                    return lambda x: x
+                    # return lambda x: x.value if isinstance(x, enum.Enum) else x
 
                 self.format = node.get('format', None)
                 self.default = node.get('default', None)
@@ -517,7 +528,7 @@ class SwaggerNode(object):
         return "SwaggerNode(ref='%s')" % self._ref
 
 
-if __name__ == '__main__': # pragma: no cover
+if __name__ == '__main__':  # pragma: no cover
     with open(os.path.join(os.path.dirname(__file__), 'rpc.swagger.json')) as f:
         spec = json.load(f)
     sh = SwaggerSpec(spec)

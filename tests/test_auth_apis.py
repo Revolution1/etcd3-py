@@ -60,8 +60,7 @@ def test_auth_flow(client, request):
     client.role_grant_permission('root', '/', permType=authpbPermissionType.READWRITE, prefix=True)
     r = client.role_get('root')
     assert len(r.perm) == 1
-    # TODO: extract reqresp models and make enum enum
-    assert r.perm[0].permType == authpbPermissionType.READWRITE.value
+    assert r.perm[0].permType == authpbPermissionType.READWRITE
     assert r.perm[0].key == b'/'
     assert r.perm[0].range_end == incr_last_byte(b'/')
 
