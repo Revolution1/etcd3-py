@@ -39,7 +39,7 @@ class WatchAPI(BaseAPI):
         :param key: key is the key to register for watching.
         :type range_end: str
         :param range_end: range_end is the end of the range [key, range_end) to watch. If range_end is not given,
-            only the key argument is watched. If range_end is equal to '\0’, all keys greater than
+            only the key argument is watched. If range_end is equal to '\0', all keys greater than
             or equal to the key argument are watched.
             If the range_end is one bit larger than the given key,
             then all keys with the prefix (the given key) will be watched.
