@@ -6,9 +6,9 @@ import time
 from collections import namedtuple, OrderedDict, Hashable
 from threading import Lock
 
-try:
+try:  # pragma: no cover
     from inspect import getfullargspec as getargspec
-except ImportError:
+except ImportError:  # pragma: no cover
     from inspect import getargspec
 import six
 from six import wraps
@@ -289,7 +289,7 @@ def iter_json_string(chunk, start=0, lb=_lb, rb=_rb, resp=None, err_cls=ValueErr
                 s = chunk[last_i:i + 1]
                 last_i = i + 1
                 yield True, s, i
-            elif bracket_flag < 0:
+            elif bracket_flag < 0:  # pragma: no cover
                 raise err_cls("Stream decode error", chunk, resp)
     yield False, chunk[last_i:], last_i - 1
 

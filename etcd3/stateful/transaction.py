@@ -288,10 +288,10 @@ class TxnCompareOp(object):
         return obj
 
     def __ge__(self, other):
-        raise NotImplemented
+        raise NotImplementedError
 
     def __le__(self, other):
-        raise NotImplemented
+        raise NotImplementedError
 
     def to_dict(self):
         data = {

@@ -19,14 +19,14 @@ def client():
 @pytest.mark.skipif(NO_ETCD_SERVICE, reason="no etcd service available")
 def test_transaction(client):
     etcdctl('put foo bar')
-    txn = Txn(client)
+    txn = client.Txn()
     txn.compare(txn.key('foo').value == 'bar')
     txn.success(txn.put('foo', 'bra'))
     r = txn.commit()
     assert r.succeeded
     assert client.range('foo').kvs[0].value == b'bra'
 
-    txn = Txn(client)
+    txn = client.Txn()
     txn.If(txn.key('foo').value == 'bar')
     txn.Then(txn.put('foo', 'bra'))
     txn.Else(txn.put('foo', 'bar'))
@@ -34,7 +34,7 @@ def test_transaction(client):
     assert client.range('foo').kvs[0].value == b'bar'
 
     etcdctl('put foo 2')
-    txn = Txn(client)
+    txn = client.Txn()
     txn.If(txn.key('foo').value > b'1')
     txn.If(txn.key('foo').value < b'3')
     txn.If(txn.key('foo').value != b'0')
@@ -45,7 +45,7 @@ def test_transaction(client):
 
     etcdctl('put foo bar')
     etcdctl('put fizz buzz')
-    txn = Txn(client)
+    txn = client.Txn()
     txn.success(txn.range('foo'))
     txn.success(txn.delete('fizz'))
     r = txn.commit()
@@ -56,3 +56,23 @@ def test_transaction(client):
         else:  # delete
             assert i.response_delete_range.deleted == 1
     assert 'kvs' not in client.range('fizz')
+
+    with pytest.raises(NotImplementedError):
+        txn.If(txn.key('foo').value >= b'1')
+    with pytest.raises(NotImplementedError):
+        txn.If(txn.key('foo').value <= b'1')
+    with pytest.raises(TypeError):
+        txn.If(txn.key('foo').value < 1)
+
+    with pytest.raises(TypeError):
+        txn.If(txn.key('foo').version < 'a')
+    with pytest.raises(TypeError):
+        txn.If(txn.key('foo').create < 'a')
+    with pytest.raises(TypeError):
+        txn.If(txn.key('foo').mod < 'a')
+
+    with pytest.raises(TypeError):
+        txn.If(txn.key('foo').mod.value < 1)
+
+    with pytest.raises(TypeError):
+        client.Txn().key(123)

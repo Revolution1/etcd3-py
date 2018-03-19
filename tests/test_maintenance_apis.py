@@ -36,7 +36,7 @@ def test_defragment(client):
 @pytest.mark.skipif(NO_ETCD_SERVICE, reason="no etcd service available")
 def test_snapshot(client):
     out = etcdctl('put some thing', json=True)
-    if six.PY3:
+    if six.PY3:  # pragma: no cover
         out = six.text_type(out, encoding='utf-8')
     rev = json.loads(out)['header']['revision']
     etcdctl('compaction --physical %s' % (rev - 10), raise_error=False)
