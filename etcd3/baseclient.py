@@ -24,7 +24,7 @@ rpc_swagger_json = os.path.join(os.path.dirname(__file__), 'rpc.swagger.json')
 swaggerSpec = SwaggerSpec(rpc_swagger_json)
 
 
-class BaseModelizedStreamResponse(object):
+class BaseModelizedStreamResponse(object):  # pragma: no cover
     """
     Model of a stream response
     """
@@ -105,7 +105,7 @@ class BaseClient(AuthAPI, ClusterAPI, KVAPI, LeaseAPI, MaintenanceAPI, WatchAPI,
         return respModel(data)
 
     @classmethod
-    def _modelizeStreamResponse(cls, method, resp, decode=True):
+    def _modelizeStreamResponse(cls, method, resp, decode=True):  # pragma: no cover
         raise NotImplemented
 
     def __enter__(self):
@@ -114,13 +114,13 @@ class BaseClient(AuthAPI, ClusterAPI, KVAPI, LeaseAPI, MaintenanceAPI, WatchAPI,
     def __exit__(self, *args):
         self.close()
 
-    def close(self):
+    def close(self):  # pragma: no cover
         """
         close all connections in connection pool
         """
-        raise NotImplemented
+        raise NotImplementedError
 
-    def _get(self, url, **kwargs):
+    def _get(self, url, **kwargs):  # pragma: no cover
         r"""
         Sends a GET request. Returns :class:`Response` object.
 
@@ -128,9 +128,9 @@ class BaseClient(AuthAPI, ClusterAPI, KVAPI, LeaseAPI, MaintenanceAPI, WatchAPI,
         :param \*\*kwargs: Optional arguments that ``request`` takes.
         :rtype: requests.Response
         """
-        raise NotImplemented
+        raise NotImplementedError
 
-    def _post(self, url, data=None, json=None, **kwargs):
+    def _post(self, url, data=None, json=None, **kwargs):  # pragma: no cover
         r"""
         Sends a POST request. Returns :class:`Response` object.
 
@@ -140,9 +140,9 @@ class BaseClient(AuthAPI, ClusterAPI, KVAPI, LeaseAPI, MaintenanceAPI, WatchAPI,
         :param \*\*kwargs: Optional arguments that ``request`` takes.
         :rtype: requests.Response
         """
-        raise NotImplemented
+        raise NotImplementedError
 
-    def call_rpc(self, method, data=None, stream=False, encode=True, raw=False, **kwargs):
+    def call_rpc(self, method, data=None, stream=False, encode=True, raw=False, **kwargs):  # pragma: no cover
         """
         call ETCDv3 RPC and return response object
 
@@ -157,9 +157,9 @@ class BaseClient(AuthAPI, ClusterAPI, KVAPI, LeaseAPI, MaintenanceAPI, WatchAPI,
         :param kwargs: additional params to pass to the http request, like headers, timeout etc.
         :return: Etcd3RPCResponseModel or Etcd3StreamingResponse
         """
-        raise NotImplemented
+        raise NotImplementedError
 
-    def auth(self, username=None, password=None):
+    def auth(self, username=None, password=None):  # pragma: no cover
         """
         call auth.authenticate and save the token
 

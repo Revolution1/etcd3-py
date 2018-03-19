@@ -48,7 +48,7 @@ class ModelizedStreamResponse(BaseModelizedStreamResponse):
             if six.PY3:
                 data = six.text_type(data, encoding='utf-8')
             data = json.loads(data)
-            if data.get('error'):
+            if data.get('error'):  # pragma: no cover
                 # {"error":{"grpc_code":14,"http_code":503,"message":"rpc error: code = Unavailable desc = transport is closing","http_status":"Service Unavailable"}}
                 err = data.get('error')
                 raise get_client_error(err.get('message'), code=err.get('code'), status=err.get('http_code'))
@@ -74,7 +74,7 @@ def iter_response(resp):
                 yield s
             else:
                 left_chunk = s
-    if left_chunk:
+    if left_chunk:  # pragma: no cover
         raise Etcd3StreamError("Stream decode error", left_chunk, resp)
 
 

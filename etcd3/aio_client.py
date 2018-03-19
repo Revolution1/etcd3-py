@@ -77,7 +77,7 @@ class ModelizedStreamResponse(BaseModelizedStreamResponse):
             await AioClient._raise_for_status(self.resp)
         data = await self.resp_iter.next()
         data = json.loads(str(data, encoding='utf-8'))
-        if data.get('error'):
+        if data.get('error'):  # pragma: no cover
             # {"error":{"grpc_code":14,"http_code":503,"message":"rpc error: code = Unavailable desc = transport is closing","http_status":"Service Unavailable"}}
             err = data.get('error')
             raise get_client_error(err.get('message'), code=err.get('code'), status=err.get('http_code'))
@@ -116,7 +116,7 @@ class ResponseIter():
                 else:
                     self.i = 0
                     self.left_chunk += await self.resp.content.readany()
-                    if not self.left_chunk:
+                    if not self.left_chunk:  # pragma: no cover
                         if self.buf:
                             raise Etcd3StreamError("Stream decode error", self.buf, self.resp)
                         raise StopAsyncIteration

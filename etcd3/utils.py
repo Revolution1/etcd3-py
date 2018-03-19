@@ -267,7 +267,7 @@ class cached_property(object):  # pragma: no cover
 
 _lb = b'{'
 _rb = b'}'
-if six.PY3:
+if six.PY3:  # pragma: no cover
     _lb = ord(_lb)
     _rb = ord(_rb)
 

@@ -15,7 +15,7 @@ from .utils import memoize_in_object
 try:
     import yaml
     import yaml.resolver
-except ImportError:
+except ImportError: # pragma: no cover
     yaml = None
 
 if six.PY2:  # pragma: no cover
@@ -25,7 +25,7 @@ else:
 
 try:
     from .models import name_to_model
-except ImportError:
+except ImportError: # pragma: no cover
     name_to_model = {}
 
 
