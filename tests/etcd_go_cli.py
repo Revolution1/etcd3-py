@@ -9,7 +9,7 @@ from .envs import ETCD_ENDPOINT
 # https://gist.github.com/4368898
 # Public domain code by anatoly techtonik <techtonik@gmail.com>
 # AKA Linux `which` and Windows `where`
-def find_executable(executable, path=None):
+def find_executable(executable, path=None):  # pragma: no cover
     """Find if 'executable' can be run. Looks for it in 'path'
     (string that lists directories separated by 'os.pathsep';
     defaults to os.environ['PATH']). Checks for all executable
@@ -51,7 +51,7 @@ def find_executable(executable, path=None):
 ETCDCTL_PATH = find_executable('etcdctl')
 
 
-def etcdctl(*args, **kwargs):
+def etcdctl(*args, **kwargs):  # pragma: no cover
     if len(args) == 1:
         args = shlex.split(args[0])
     json = kwargs.get('json', False)
@@ -74,12 +74,12 @@ def etcdctl(*args, **kwargs):
 
 
 NO_ETCD_SERVICE = True
-try:
+try:  # pragma: no cover
     if ETCDCTL_PATH and etcdctl('--dial-timeout=0.2s endpoint health'):
         NO_ETCD_SERVICE = False
     else:
         print("etcdctl executable not found")
-except Exception as e:
+except Exception as e:  # pragma: no cover
     print(e)
 
 if __name__ == '__main__':

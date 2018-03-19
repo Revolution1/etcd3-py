@@ -152,7 +152,7 @@ def memoize(fn):  # pragma: no cover
     return _memoized
 
 
-def memoize_in_object(fn):
+def memoize_in_object(fn):  # pragma: no cover
     """
     Decorator. Caches a method's return value each time it is called, in the object instance
     If called later with the same arguments, the cached value is returned
@@ -180,7 +180,7 @@ def memoize_in_object(fn):
 bytes_types = (bytes, bytearray)
 
 
-def incr_last_byte(data):
+def incr_last_byte(data):  # pragma: no cover
     """
     Get the last byte in the array and increment it
     """
@@ -200,7 +200,7 @@ def merge_two_dicts(x, y):
     return z
 
 
-def check_param(at_least_one_of=None, at_most_one_of=None):
+def check_param(at_least_one_of=None, at_most_one_of=None):  # pragma: no cover
     """
     check if at least/most one of params is given
 
@@ -245,7 +245,7 @@ def run_coro(coro):  # pragma: no cover
     return loop.run_until_complete(coro)
 
 
-class cached_property(object):
+class cached_property(object):  # pragma: no cover
     """A property that is only computed once per instance and then replaces
        itself with an ordinary attribute. Deleting the attribute resets the
        property.
@@ -294,13 +294,13 @@ def iter_json_string(chunk, start=0, lb=_lb, rb=_rb, resp=None, err_cls=ValueErr
     yield False, chunk[last_i:], last_i - 1
 
 
-def _enum_value(e):
+def _enum_value(e):  # pragma: no cover
     if isinstance(e, enum.Enum):
         return e.value
     return e
 
 
-def retry(func, max_tries=3, log=logging):
+def retry(func, max_tries=3, log=logging):  # pragma: no cover
     i = 1
     while True:
         try:

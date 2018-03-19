@@ -21,7 +21,7 @@ def client():
     c.close()
 
 
-def teardown_auth():
+def teardown_auth():  # pragma: no cover
     """
     disable auth, delete all users and roles
     """
@@ -33,7 +33,7 @@ def teardown_auth():
         etcdctl('user', 'delete', i)
 
 
-def enable_auth():
+def enable_auth():  # pragma: no cover
     etcdctl('user add root:root')
     etcdctl('role add root')
     etcdctl('user grant root root')

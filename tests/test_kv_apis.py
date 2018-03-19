@@ -80,7 +80,7 @@ def test_delete(client, request):
 
 
 @pytest.mark.skipif(NO_ETCD_SERVICE, reason="no etcd service available")
-def test_delete(client, request):
+def test_compact(client, request):
     out = etcdctl('put some thing', json=True)
     if six.PY3:
         out = six.text_type(out, encoding='utf-8')
