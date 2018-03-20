@@ -39,7 +39,7 @@ def swagger_escape(s):  # pragma: no cover
     return s.replace('~', '~0').replace('/', '~1')
 
 
-def _format_path(path):
+def _format_path(path):  # pragma: no cover
     """
     escape path to make it possible to 'dot' a attribute in python
 
@@ -81,7 +81,7 @@ class SwaggerSpec(object):
         """
         if isinstance(spec, dict):
             spec_content = spec
-        elif isinstance(spec, file_types):
+        elif isinstance(spec, file_types):  # pragma: no cover
             pos = spec.tell()
             spec_content = spec.read()
             spec.seek(pos)
@@ -91,7 +91,7 @@ class SwaggerSpec(object):
                     spec_content = f.read()
             else:
                 spec_content = spec
-        else:
+        else:  # pragma: no cover
             raise TypeError('spec should be one of path, file obj, spec string')
         if isinstance(spec_content, dict):
             self.spec = spec_content

@@ -72,11 +72,11 @@ class BaseClient(AuthAPI, ClusterAPI, KVAPI, LeaseAPI, MaintenanceAPI, WatchAPI,
         self.password = password
         self.token = token
         self.cluster_version = None
-        self.__retrieve_version()
+        self._retrieve_version()
 
-    def __retrieve_version(self):
+    def _retrieve_version(self):  # pragma: no cover
         try:
-            r = requests.get(self._url('/version'), timeout='0.2')
+            r = requests.get(self._url('/version'), timeout=0.3)
             r.raise_for_status()
             v = r.json()
             self.cluster_version = v["etcdcluster"]
