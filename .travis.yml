@@ -40,6 +40,5 @@ deploy:
   on:
     tags: true
     branch: master
-    repo: Revolution1/etcd3-py
     python:
       - 3.6
