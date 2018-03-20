@@ -45,17 +45,24 @@ class Lease(object):
             self._ID = r.ID
             return r
         else:
-            r = self.client.lease_time_to_live(self.ID)
-            if r.TTL == -1:
+            r = self.time_to_live()
+            if 'TTL' not in r:
+                ttl = -1
+            else:
+                ttl = r.TTL
+            if ttl == -1:
                 raise ErrLeaseNotFound
-            self.last_grant = time.time() - r.TTL
+            self.last_grant = time.time() - ttl
             return r
 
     def time_to_live(self, keys=False):
         return self.client.lease_time_to_live(self.ID, keys=keys)
 
     def ttl(self):
-        return self.time_to_live().TTL
+        r = self.time_to_live()
+        if 'TTL' not in r:
+            return -1
+        return r.TTL
 
     def alive(self):
         return self.ttl() > 0
@@ -84,7 +91,10 @@ class Lease(object):
                         keep_cb()
                     except Exception:
                         log.exception("stream_cb() raised an error")
-                time.sleep(self.grantedTTL / 4.0)
+                for i in range(int(self.grantedTTL / 2.0)):  # keep per grantedTTL/4 seconds
+                    if self.keeping:
+                        break
+                    time.sleep(0.5)
             log.debug("canceled keeping lease %d" % self.ID)
             if cancel_cb:
                 try:

@@ -40,7 +40,7 @@ def test_lease_util(client):
         assert not lease.jammed()
         assert lease._thread.is_alive()
 
-    time.sleep(TTL / 3.0)
+    time.sleep(TTL)
     assert not lease.alive()
     assert not lease.keeping
     assert not lease._thread.is_alive()
@@ -54,10 +54,11 @@ def test_lease_util(client):
     lease.grant()
     lease.keepalive(keep_cb=keep_cb, cancel_cb=cancel_cb)
     lease.cancel_keepalive()
-    time.sleep(TTL)
+    time.sleep(TTL * 0.8)
     assert keep_cb.called
     assert cancel_cb.called
 
+    lease.keepalive_once()
     lease = client.Lease(ttl=TTL, ID=ID, new=False)
     lease.grant()
     assert lease.alive()

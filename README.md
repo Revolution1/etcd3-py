@@ -97,7 +97,7 @@ etcdserverpbTxnResponse(header=etcdserverpbResponseHeader(cluster_id=11588568905
 ```python
 >>> from etcd3 import Client
 >>> client = Client()
->>> watcher=c.Watcher(all=True, progress_notify=True, prev_kv=True)
+>>> watcher = c.Watcher(all=True, progress_notify=True, prev_kv=True)
 >>> w.onEvent('f.*', lambda e: print(e.key, e.value))
 >>> w.runDaemon()
 >>> # etcdctl put foo bar
