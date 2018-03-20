@@ -3,7 +3,9 @@ import functools
 import itertools
 import logging
 import time
+import warnings
 from collections import namedtuple, OrderedDict, Hashable
+from subprocess import Popen, PIPE
 from threading import Lock
 
 try:  # pragma: no cover
@@ -313,3 +315,19 @@ def retry(func, max_tries=3, log=logging):  # pragma: no cover
                 i += 1
             else:
                 raise
+
+
+def exec_cmd(cmd, envs=None, raise_error=True):  # pragma: no cover
+    envs = envs or {}
+    p = Popen(cmd, stdout=PIPE, stderr=PIPE, env=envs)
+    out, err = p.communicate()
+    if p.returncode != 0 and raise_error:
+        raise RuntimeError(err)
+    return out
+
+
+class Etcd3Warning(UserWarning):
+    pass
+
+
+warnings.simplefilter('always', Etcd3Warning)

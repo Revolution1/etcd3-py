@@ -1,8 +1,8 @@
 import os
 import shlex
 import sys
-from subprocess import Popen, PIPE
 
+from etcd3.utils import exec_cmd
 from .envs import ETCD_ENDPOINT
 
 
@@ -66,11 +66,7 @@ def etcdctl(*args, **kwargs):  # pragma: no cover
     if version == 3:
         envs['ETCDCTL_API'] = '3'
     cmd.extend(args)
-    p = Popen(cmd, stdout=PIPE, stderr=PIPE, env=envs)
-    out, err = p.communicate()
-    if p.returncode != 0 and raise_error:
-        raise RuntimeError(err)
-    return out
+    return exec_cmd(cmd, envs, raise_error)
 
 
 NO_ETCD_SERVICE = True

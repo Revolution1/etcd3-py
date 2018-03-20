@@ -1,6 +1,8 @@
+import warnings
+
 from .base import BaseAPI
 from ..models import WatchCreateRequestFilterType
-from ..utils import check_param, incr_last_byte
+from ..utils import check_param, incr_last_byte, Etcd3Warning
 
 
 class WatchAPI(BaseAPI):
@@ -30,8 +32,8 @@ class WatchAPI(BaseAPI):
         return self.call_rpc(method, data=data, stream=True)
 
     @check_param(at_least_one_of=['key', 'all'], at_most_one_of=['range_end', 'prefix', 'all'])
-    def watch_create(self, key, range_end=None, start_revision=None, progress_notify=None, filters=None, prev_kv=None,
-                     prefix=False, all=False):
+    def watch_create(self, key=None, range_end=None, start_revision=None, progress_notify=None, prev_kv=None,
+                     prefix=False, all=False, no_put=False, no_delete=False):
         """
         WatchCreate creates a watch stream on given key or key_range
 
@@ -50,9 +52,6 @@ class WatchAPI(BaseAPI):
             no events to the new watcher if there are no recent events. It is useful when clients
             wish to recover a disconnected watcher starting from a recent known revision.
             The etcd server may decide how often it will send notifications based on current load.
-        :type filters: list of WatchCreateRequestFilterType
-        :param filters: filters filter the events at server side before it sends back to the watcher.
-            default: [WatchCreateRequestFilterType.NOPUT]
         :type prev_kv: bool
         :param prev_kv: If prev_kv is set, created watcher gets the previous KV before the event happens.
             If the previous KV is already compacted, nothing will be returned.
@@ -60,12 +59,20 @@ class WatchAPI(BaseAPI):
         :param prefix: if the key is a prefix [default: False]
         :type all: bool
         :param all: all the keys [default: False]
+        :type no_put: bool
+        :param no_put: filter out the put events at server side before it sends back to the watcher. [default: False]
+        :type filters: bool
+        :param filters: filter out the delete events at server side before it sends back to the watcher. [default: False]
         """
         if all:
             key = range_end = '\0'
         if prefix:
             range_end = incr_last_byte(key)
-        filters = filters or [WatchCreateRequestFilterType.NOPUT]
+        filters = []
+        if no_put:
+            filters.append(WatchCreateRequestFilterType.NOPUT)
+        if no_delete:
+            filters.append(WatchCreateRequestFilterType.NODELETE)
         data = {
             "key": key,
             "range_end": range_end,
@@ -77,13 +84,22 @@ class WatchAPI(BaseAPI):
         data = {k: v for k, v in data.items() if v is not None}
         return self.watch(create_request=data)
 
-    def watch_cancel(self, watch_id):
+    def watch_cancel(self, watch_id):  # pragma: no cover
         """
+        NOT SUPPORTED UNDER ETCD 3.3-
+
+        https://github.com/coreos/etcd/pull/9065
+
         WatchCancel cancels a watch stream
 
         :type watch_id: int
         :param watch_id: watch_id is the watcher id to cancel so that no more events are transmitted.
         """
+        warnings.warn(
+            Etcd3Warning("there is no way to cancel a watch request, due to cannot get the watcher id\n"
+                         "but it may be supported in the future: https://github.com/coreos/etcd/pull/9065")
+        )
+
         data = {
             "watch_id": watch_id
         }

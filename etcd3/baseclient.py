@@ -4,7 +4,10 @@ synchronous client
 
 import abc
 import os
+import warnings
 
+import requests
+import semantic_version as sem
 from six.moves import urllib_parse
 
 from .apis import AuthAPI
@@ -17,6 +20,7 @@ from .apis import WatchAPI
 from .stateful import Lease
 from .stateful import Txn
 from .swagger_helper import SwaggerSpec
+from .utils import Etcd3Warning
 from .version import __version__
 
 rpc_swagger_json = os.path.join(os.path.dirname(__file__), 'rpc.swagger.json')
@@ -67,6 +71,22 @@ class BaseClient(AuthAPI, ClusterAPI, KVAPI, LeaseAPI, MaintenanceAPI, WatchAPI,
         self.username = username
         self.password = password
         self.token = token
+        self.cluster_version = None
+        self.__retrieve_version()
+
+    def __retrieve_version(self):
+        try:
+            r = requests.get(self._url('/version'), timeout='0.2')
+            r.raise_for_status()
+            v = r.json()
+            self.cluster_version = v["etcdcluster"]
+            if sem.compare(self.cluster_version, '3.3.0') == -1:
+                warnings.warn(Etcd3Warning("detected etcd cluster version(%s) is lower than 3.3.0, "
+                                           "auth method may not work" % self.cluster_version))
+        except Exception:
+            warnings.warn(Etcd3Warning("cannot detect etcd server version\n"
+                                       "1. maybe is a network problem, please check your network connection\n"
+                                       "2. maybe your etcd server version is too low, recommended: 3.3.0+"))
 
     @property
     def baseurl(self):
