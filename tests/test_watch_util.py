@@ -3,7 +3,7 @@ import time
 
 import pytest
 
-from etcd3 import Client
+from etcd3 import Client, EventType
 from .envs import protocol, host, port
 from .etcd_go_cli import etcdctl, NO_ETCD_SERVICE
 
@@ -25,11 +25,13 @@ def test_watcher(client):
     foo_list = []
     fizz_list = []
     all_list = []
+    del_list = []
     w.onEvent(lambda e: e.key == b'foo', lambda e: foo_list.append(e))
     w.onEvent('fiz.', lambda e: fizz_list.append(e))
+    w.onEvent(EventType.DELETE, lambda e: del_list.append(e))
     w.onEvent(lambda e: all_list.append(e))
 
-    assert len(w.callbacks) == 3
+    assert len(w.callbacks) == 4
 
     w.runDaemon()
     # with pytest.raises(RuntimeError):
@@ -42,6 +44,7 @@ def test_watcher(client):
 
     etcdctl('put foo bar')
     etcdctl('put foo bar')
+    etcdctl('del foo')
     etcdctl('put fizz buzz')
     etcdctl('put fizz buzz')
     etcdctl('put fizz buzz')
@@ -53,9 +56,10 @@ def test_watcher(client):
     assert not w.watching
     assert not w._thread.is_alive()
 
-    assert len(foo_list) == 2
+    assert len(foo_list) == 3
     assert len(fizz_list) == 3
-    assert len(all_list) == 5
+    assert len(del_list) == 1
+    assert len(all_list) == 6
 
     etcdctl('put foo bar')
     etcdctl('put fizz buzz')
@@ -69,7 +73,7 @@ def test_watcher(client):
 
     assert len(foo_list) == 1
     assert len(fizz_list) == 1
-    assert len(all_list) == 7
+    assert len(all_list) == 8
 
     w.clear_callbacks()
     assert len(w.callbacks) == 0

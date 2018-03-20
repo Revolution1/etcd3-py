@@ -47,7 +47,7 @@ class KeyValue(object):  # pragma: no cover
 class Event(KeyValue):
     def __init__(self, data):
         super(Event, self).__init__(data.kv._data)
-        self.type = getattr(data, 'type', None)
+        self.type = getattr(data, 'type', EventType.PUT)  # default is PUT
         self._data['type'] = self.type
         self.prev_kv = None
         if 'prev_kv' in data:
@@ -154,7 +154,7 @@ class Watcher(object):
                 return regex.match(key)
         elif match is None:
             match_func = lambda e: True
-        elif isinstance(match, EventType):  # pragma: no cover
+        elif isinstance(match, EventType):
             match_func = lambda e: e.type == match
         else:
             raise TypeError('expect match to be one of string, EventType, callable got %s' % type(match))

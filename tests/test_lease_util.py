@@ -54,7 +54,7 @@ def test_lease_util(client):
     lease.grant()
     lease.keepalive(keep_cb=keep_cb, cancel_cb=cancel_cb)
     lease.cancel_keepalive()
-    time.sleep(TTL / 2.0)
+    time.sleep(TTL)
     assert keep_cb.called
     assert cancel_cb.called
 
