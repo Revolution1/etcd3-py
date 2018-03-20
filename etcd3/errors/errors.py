@@ -1,7 +1,7 @@
 from .go_etcd_rpctypes_error import Etcd3Exception, errStringToClientError, ErrUnknownError
 
 
-class Etcd3StreamError(Etcd3Exception):
+class Etcd3StreamError(Etcd3Exception):  # pragma: no cover
     def __init__(self, error, buf, resp):
         self.error = error
         self.buf = buf

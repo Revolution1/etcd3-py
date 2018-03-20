@@ -9,7 +9,7 @@ from ..etcd_go_cli import etcdctl
 
 
 @pytest.fixture
-def event_loop():
+def event_loop():  # pragma: no cover
     """Create an instance of the default event loop for each test case."""
     policy = asyncio.get_event_loop_policy()
     res = policy.new_event_loop()

@@ -40,7 +40,7 @@ def test_lease_flow(client):
     assert r.TTL < TTL
     assert set(r.keys) == {b'foo', b'fizz'}
 
-    for i in client.lease_keep_alive(ID):
+    for i in client.lease_keep_alive(b'{"ID":%d}\n' % ID):
         assert i.ID == ID
         assert i.TTL == TTL
     r = client.lease_keep_alive_once(ID)

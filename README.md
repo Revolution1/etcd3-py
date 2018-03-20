@@ -1,5 +1,4 @@
-etcd3-py
----------------------
+# etcd3-py
 
 [![pypi](https://img.shields.io/pypi/v/etcd3-py.svg)](https://pypi.python.org/pypi/etcd3-py)
 [![travis](https://travis-ci.org/Revolution1/etcd3-py.svg?branch=master)](https://travis-ci.org/Revolution1/etcd3-py)
@@ -16,8 +15,7 @@ Python client for etcd v3 (Using gRPC-JSON-Gateway)
 
 Notice: The authentication header through gRPC-JSON-Gateway only supported in [etcd v3.3+](https://github.com/coreos/etcd/pull/7999)
 
-Features
-========
+## Features
 
 * [x] Support python2.7 and python3.5+
 * [x] Sync client based on requests
@@ -35,18 +33,19 @@ Features
     * [x] Maintenance
     * [x] Extra APIs
 * [ ] stateful utilities
-    * [ ] Watch
-    * [ ] Lease
-    * [ ] Transaction
+    * [x] Watch
+    * [x] Lease
+    * [x] Transaction
     * [ ] Lock
 
-Quick Start
-===========
+## Quick Start
 
 **Install**
 ```bash
 $ pip install etcd3-py
 ```
+
+---
 
 **Sync Client**
 ```python
@@ -74,9 +73,43 @@ etcdserverpbPutResponse(header=etcdserverpbResponseHeader(cluster_id=11588568905
 key: b'foo' value: b'bar'
 ```
 
+**Transaction Util**
+```python
+>>> from etcd3 import Client
+>>> txn = Client().Txn()
+>>> txn.compare(txn.key('foo').value == 'bar')
+>>> txn.success(txn.put('foo', 'bra'))
+>>> txn.commit()
+etcdserverpbTxnResponse(header=etcdserverpbResponseHeader(cluster_id=11588568905070377092, member_id=128088275939295631, revision=15656, raft_term=4), succeeded=True, responses=[etcdserverpbResponseOp(response_put=etcdserverpbPutResponse(header=etcdserverpbResponseHeader(revision=15656)))])
+```
 
-TODO
-====
+**Lease Util**
+```python
+>>> from etcd3 import Client
+>>> client = Client()
+>>> with client.Lease(ttl=5) as lease:
+...     client.put('foo', 'bar', lease=lease.ID)
+...     client.put('fizz', 'buzz', lease=lease.ID)
+...     r = lease.time_to_live(keys=True)
+...     assert set(r.keys) == {b'foo', b'fizz'}
+...     assert lease.alive()
+```
+
+**Watch Util**
+```python
+>>> from etcd3 import Client
+>>> client = Client()
+>>> watcher=c.Watcher(all=True, progress_notify=True, prev_kv=True)
+>>> w.onEvent('f.*', lambda e: print(e.key, e.value))
+>>> w.runDaemon()
+>>> # etcdctl put foo bar
+>>> # etcdctl put foz bar
+b'foo' b'bar'
+b'foz' b'bar'
+>>> w.stop()
+```
+
+## TODO
 
 - [ ] benchmark
 - [ ] python-etcd(etcd v2) compatible client

@@ -112,7 +112,7 @@ class Etcd3Exception(Exception):
     pass
 
 
-def Error(err, name):
+def Error(err, name):  # pragma: no cover
     class ClientError(Etcd3Exception):
         def __init__(self, error, code, status, response=None):
             self.code = err[0]

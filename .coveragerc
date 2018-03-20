@@ -26,8 +26,9 @@ ignore_errors = True
 source =
     etcd3/
 omit =
-    etcd3/errors
+    etcd3/errors/
     tests/
+    etcd3/utils.py
 
 [html]
 directory = coverage_html_report

@@ -16,7 +16,7 @@ class ExtraAPI(BaseAPI):
         self._raise_for_status(resp)
         return EtcdVersion(**resp.json())
 
-    def metrics_raw(self):
+    def metrics_raw(self):  # pragma: no cover
         """
         get the raw /metrics text
 
@@ -26,7 +26,7 @@ class ExtraAPI(BaseAPI):
         self._raise_for_status(resp)
         return resp.content
 
-    def metrics(self):
+    def metrics(self):  # pragma: no cover
         """
         get the modelized metrics parsed by prometheus_client
         """

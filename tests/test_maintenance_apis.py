@@ -4,6 +4,7 @@ import pytest
 import six
 
 from etcd3.client import Client
+from etcd3.models import etcdserverpbAlarmType
 from .envs import protocol, host, port
 from .etcd_go_cli import NO_ETCD_SERVICE, etcdctl
 
@@ -34,9 +35,16 @@ def test_defragment(client):
 
 
 @pytest.mark.skipif(NO_ETCD_SERVICE, reason="no etcd service available")
+def test_alarm(client):
+    assert client.alarm_activate(0, etcdserverpbAlarmType.NOSPACE)
+    assert client.alarm_get(0, etcdserverpbAlarmType.NOSPACE)
+    assert client.alarm_deactivate(0, etcdserverpbAlarmType.NOSPACE)
+
+
+@pytest.mark.skipif(NO_ETCD_SERVICE, reason="no etcd service available")
 def test_snapshot(client):
     out = etcdctl('put some thing', json=True)
-    if six.PY3:
+    if six.PY3:  # pragma: no cover
         out = six.text_type(out, encoding='utf-8')
     rev = json.loads(out)['header']['revision']
     etcdctl('compaction --physical %s' % (rev - 10), raise_error=False)

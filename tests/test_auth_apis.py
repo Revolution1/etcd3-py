@@ -21,7 +21,7 @@ def client():
     c.close()
 
 
-def teardown_auth():
+def teardown_auth():  # pragma: no cover
     """
     disable auth, delete all users and roles
     """
@@ -33,7 +33,7 @@ def teardown_auth():
         etcdctl('user', 'delete', i)
 
 
-def enable_auth():
+def enable_auth():  # pragma: no cover
     etcdctl('user add root:root')
     etcdctl('role add root')
     etcdctl('user grant root root')
@@ -60,8 +60,7 @@ def test_auth_flow(client, request):
     client.role_grant_permission('root', '/', permType=authpbPermissionType.READWRITE, prefix=True)
     r = client.role_get('root')
     assert len(r.perm) == 1
-    # TODO: extract reqresp models and make enum enum
-    assert r.perm[0].permType == authpbPermissionType.READWRITE.value
+    assert r.perm[0].permType == authpbPermissionType.READWRITE
     assert r.perm[0].key == b'/'
     assert r.perm[0].range_end == incr_last_byte(b'/')
 

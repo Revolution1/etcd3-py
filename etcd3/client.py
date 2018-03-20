@@ -48,7 +48,7 @@ class ModelizedStreamResponse(BaseModelizedStreamResponse):
             if six.PY3:
                 data = six.text_type(data, encoding='utf-8')
             data = json.loads(data)
-            if data.get('error'):
+            if data.get('error'):  # pragma: no cover
                 # {"error":{"grpc_code":14,"http_code":503,"message":"rpc error: code = Unavailable desc = transport is closing","http_status":"Service Unavailable"}}
                 err = data.get('error')
                 raise get_client_error(err.get('message'), code=err.get('code'), status=err.get('http_code'))
@@ -74,7 +74,7 @@ def iter_response(resp):
                 yield s
             else:
                 left_chunk = s
-    if left_chunk:
+    if left_chunk:  # pragma: no cover
         raise Etcd3StreamError("Stream decode error", left_chunk, resp)
 
 
@@ -175,9 +175,12 @@ class Client(BaseClient):
             kwargs.setdefault('headers', {}).setdefault('authorization', self.token)
         kwargs.setdefault('headers', {}).setdefault('user_agent', self.user_agent)
         kwargs.setdefault('headers', {}).update(self.headers)
-        if encode:
-            data = self._encodeRPCRequest(method, data)
-        resp = self._post(self._url(method), json=data or {}, stream=stream, **kwargs)
+        if isinstance(data, dict):
+            if encode:
+                data = self._encodeRPCRequest(method, data)
+            resp = self._post(self._url(method), json=data or {}, stream=stream, **kwargs)
+        else:
+            resp = self._post(self._url(method), data=data, stream=stream, **kwargs)
         self._raise_for_status(resp)
         if raw:
             return resp

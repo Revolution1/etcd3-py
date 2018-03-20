@@ -4,7 +4,10 @@ synchronous client
 
 import abc
 import os
+import warnings
 
+import requests
+import semantic_version as sem
 from six.moves import urllib_parse
 
 from .apis import AuthAPI
@@ -14,7 +17,11 @@ from .apis import KVAPI
 from .apis import LeaseAPI
 from .apis import MaintenanceAPI
 from .apis import WatchAPI
+from .stateful import Lease
+from .stateful import Txn
+from .stateful import Watcher
 from .swagger_helper import SwaggerSpec
+from .utils import Etcd3Warning
 from .version import __version__
 
 rpc_swagger_json = os.path.join(os.path.dirname(__file__), 'rpc.swagger.json')
@@ -22,7 +29,7 @@ rpc_swagger_json = os.path.join(os.path.dirname(__file__), 'rpc.swagger.json')
 swaggerSpec = SwaggerSpec(rpc_swagger_json)
 
 
-class BaseModelizedStreamResponse(object):
+class BaseModelizedStreamResponse(object):  # pragma: no cover
     """
     Model of a stream response
     """
@@ -65,6 +72,22 @@ class BaseClient(AuthAPI, ClusterAPI, KVAPI, LeaseAPI, MaintenanceAPI, WatchAPI,
         self.username = username
         self.password = password
         self.token = token
+        self.cluster_version = None
+        self._retrieve_version()
+
+    def _retrieve_version(self):  # pragma: no cover
+        try:
+            r = requests.get(self._url('/version'), timeout=0.3)
+            r.raise_for_status()
+            v = r.json()
+            self.cluster_version = v["etcdcluster"]
+            if sem.compare(self.cluster_version, '3.3.0') == -1:
+                warnings.warn(Etcd3Warning("detected etcd cluster version(%s) is lower than 3.3.0, "
+                                           "auth method may not work" % self.cluster_version))
+        except Exception:
+            warnings.warn(Etcd3Warning("cannot detect etcd server version\n"
+                                       "1. maybe is a network problem, please check your network connection\n"
+                                       "2. maybe your etcd server version is too low, recommended: 3.3.0+"))
 
     @property
     def baseurl(self):
@@ -103,7 +126,7 @@ class BaseClient(AuthAPI, ClusterAPI, KVAPI, LeaseAPI, MaintenanceAPI, WatchAPI,
         return respModel(data)
 
     @classmethod
-    def _modelizeStreamResponse(cls, method, resp, decode=True):
+    def _modelizeStreamResponse(cls, method, resp, decode=True):  # pragma: no cover
         raise NotImplemented
 
     def __enter__(self):
@@ -112,13 +135,13 @@ class BaseClient(AuthAPI, ClusterAPI, KVAPI, LeaseAPI, MaintenanceAPI, WatchAPI,
     def __exit__(self, *args):
         self.close()
 
-    def close(self):
+    def close(self):  # pragma: no cover
         """
         close all connections in connection pool
         """
-        raise NotImplemented
+        raise NotImplementedError
 
-    def _get(self, url, **kwargs):
+    def _get(self, url, **kwargs):  # pragma: no cover
         r"""
         Sends a GET request. Returns :class:`Response` object.
 
@@ -126,9 +149,9 @@ class BaseClient(AuthAPI, ClusterAPI, KVAPI, LeaseAPI, MaintenanceAPI, WatchAPI,
         :param \*\*kwargs: Optional arguments that ``request`` takes.
         :rtype: requests.Response
         """
-        raise NotImplemented
+        raise NotImplementedError
 
-    def _post(self, url, data=None, json=None, **kwargs):
+    def _post(self, url, data=None, json=None, **kwargs):  # pragma: no cover
         r"""
         Sends a POST request. Returns :class:`Response` object.
 
@@ -138,9 +161,9 @@ class BaseClient(AuthAPI, ClusterAPI, KVAPI, LeaseAPI, MaintenanceAPI, WatchAPI,
         :param \*\*kwargs: Optional arguments that ``request`` takes.
         :rtype: requests.Response
         """
-        raise NotImplemented
+        raise NotImplementedError
 
-    def call_rpc(self, method, data=None, stream=False, encode=True, raw=False, **kwargs):
+    def call_rpc(self, method, data=None, stream=False, encode=True, raw=False, **kwargs):  # pragma: no cover
         """
         call ETCDv3 RPC and return response object
 
@@ -155,9 +178,9 @@ class BaseClient(AuthAPI, ClusterAPI, KVAPI, LeaseAPI, MaintenanceAPI, WatchAPI,
         :param kwargs: additional params to pass to the http request, like headers, timeout etc.
         :return: Etcd3RPCResponseModel or Etcd3StreamingResponse
         """
-        raise NotImplemented
+        raise NotImplementedError
 
-    def auth(self, username=None, password=None):
+    def auth(self, username=None, password=None):  # pragma: no cover
         """
         call auth.authenticate and save the token
 
@@ -167,3 +190,60 @@ class BaseClient(AuthAPI, ClusterAPI, KVAPI, LeaseAPI, MaintenanceAPI, WatchAPI,
         :param password: password
         """
         pass
+
+    def Txn(self):
+        """
+        Initialize a Transaction
+        """
+        return Txn(self)
+
+    def Lease(self, ttl, ID=0, new=True):
+        """
+        Initialize a Lease
+
+        :type ID: int
+        :param ID: ID is the requested ID for the lease. If ID is set to 0, the lessor chooses an ID.
+        :type new: bool
+        :param new: whether grant a new lease or maintain a exist lease by its id [default: True]
+        """
+        return Lease(self, ttl=ttl, ID=ID, new=new)
+
+    def Watcher(self, key=None, range_end=None, max_retries=-1, start_revision=None, progress_notify=None,
+                prev_kv=None, prefix=None, all=None, no_put=False, no_delete=False):
+        """
+        Initialize a Watcher
+
+        :type key: str
+        :param key: key is the key to register for watching.
+        :type range_end: str
+        :param range_end: range_end is the end of the range [key, range_end) to watch. If range_end is not given,
+            only the key argument is watched. If range_end is equal to '\0', all keys greater than
+            or equal to the key argument are watched.
+            If the range_end is one bit larger than the given key,
+            then all keys with the prefix (the given key) will be watched.
+        :type max_retries: int
+        :param max_retries: max retries when watch failed due to network problem, -1 means no limit [default: -1]
+        :type start_revision: int
+        :param start_revision: start_revision is an optional revision to watch from (inclusive). No start_revision is "now".
+        :type progress_notify: bool
+        :param progress_notify: progress_notify is set so that the etcd server will periodically send a WatchResponse with
+            no events to the new watcher if there are no recent events. It is useful when clients
+            wish to recover a disconnected watcher starting from a recent known revision.
+            The etcd server may decide how often it will send notifications based on current load.
+        :type prev_kv: bool
+        :param prev_kv: If prev_kv is set, created watcher gets the previous KV before the event happens.
+            If the previous KV is already compacted, nothing will be returned.
+        :type prefix: bool
+        :param prefix: if the key is a prefix [default: False]
+        :type all: bool
+        :param all: all the keys [default: False]
+        :type no_put: bool
+        :param no_put: filter out the put events at server side before it sends back to the watcher. [default: False]
+        :type no_delete: bool
+        :param no_delete: filter out the delete events at server side before it sends back to the watcher. [default: False]
+        :return: Watcher
+        """
+        return Watcher(client=self, key=key, range_end=range_end, max_retries=max_retries,
+                       start_revision=start_revision,
+                       progress_notify=progress_notify, prev_kv=prev_kv, prefix=prefix, all=all, no_put=no_put,
+                       no_delete=no_delete)

@@ -4,7 +4,7 @@ import six
 from mock import Mock
 
 
-def fake_request(status_code, content):
+def fake_request(status_code, content):  # pragma: no cover
     mock_response = Mock()
     mock_response.status_code = status_code
     mock_response.content = content

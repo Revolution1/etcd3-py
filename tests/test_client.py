@@ -33,7 +33,7 @@ def test_stream(client):
     created = False
     with client.call_rpc('/v3alpha/watch', {'create_request': {'key': 'test_key'}}, stream=True) as r:
         for i in r:
-            if not times:
+            if not times:  # pragma: no cover
                 break
             if not created:
                 created = i.created
@@ -55,6 +55,7 @@ def test_patched_stream(client, monkeypatch):
     s = b'{"result": {"header": {"raft_term": 7, "member_id": 128088275939295631, "cluster_id": 11588568905070377092, "revision": 378}, "created": true}}' \
         b'{"result": {"header": {"raft_term": 7, "member_id": 128088275939295631, "cluster_id": 11588568905070377092, "revision": 379}, "events": [{"kv": {"mod_revision": 379, "value": "dGVzdF92YWx1ZQ==", "create_revision": 379, "version": 1, "key": "dGVzdF9rZXk="}}]}}' \
         b'{"result": {"header": {"raft_term": 7, "member_id": 128088275939295631, "cluster_id": 11588568905070377092, "revision": 380}, "events": [{"kv": {"mod_revision": 380, "value": "dGVzdF92YWx1ZQ==", "create_revision": 379, "version": 2, "key": "dGVzdF9rZXk="}}]}}' \
+        b'{"result": {"header": {"raft_term": 7, "member_id": 128088275939295631, "cluster_id": 11588568905070377092, "revision": 381}, "events": [{"kv": {"mod_revision": 381, "value": "dGVzdF92YWx1ZQ==", "create_revision": 379, "version": 3, "key": "dGVzdF9rZXk="}}]}}' \
         b'{"result": {"header": {"raft_term": 7, "member_id": 128088275939295631, "cluster_id": 11588568905070377092, "revision": 381}, "events": [{"kv": {"mod_revision": 381, "value": "dGVzdF92YWx1ZQ==", "create_revision": 379, "version": 3, "key": "dGVzdF9rZXk="}}]}}'
     post = fake_request(200, s)
     monkeypatch.setattr(client._session, 'post', post)
@@ -62,7 +63,7 @@ def test_patched_stream(client, monkeypatch):
     created = False
     with client.call_rpc('/v3alpha/watch', {'create_request': {'key': 'test_key'}}, stream=True) as r:
         for i in r:
-            if not times:
+            if not times:  # pragma: no cover
                 break
             if not created:
                 created = i.created

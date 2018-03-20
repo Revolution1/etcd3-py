@@ -15,16 +15,21 @@ from .utils import memoize_in_object
 try:
     import yaml
     import yaml.resolver
-except ImportError:
+except ImportError:  # pragma: no cover
     yaml = None
 
-if six.PY2:
+if six.PY2:  # pragma: no cover
     file_types = file, io.IOBase  # noqa: F821
 else:
     file_types = (io.IOBase,)
 
+try:
+    from .models import name_to_model
+except ImportError:  # pragma: no cover
+    name_to_model = {}
 
-def swagger_escape(s):
+
+def swagger_escape(s):  # pragma: no cover
     """
     / and ~ are special characters in JSON Pointers,
     and need to be escaped when used literally (for example, in path names).
@@ -34,7 +39,7 @@ def swagger_escape(s):
     return s.replace('~', '~0').replace('/', '~1')
 
 
-def _format_path(path):
+def _format_path(path):  # pragma: no cover
     """
     escape path to make it possible to 'dot' a attribute in python
 
@@ -76,7 +81,7 @@ class SwaggerSpec(object):
         """
         if isinstance(spec, dict):
             spec_content = spec
-        elif isinstance(spec, file_types):
+        elif isinstance(spec, file_types):  # pragma: no cover
             pos = spec.tell()
             spec_content = spec.read()
             spec.seek(pos)
@@ -86,14 +91,14 @@ class SwaggerSpec(object):
                     spec_content = f.read()
             else:
                 spec_content = spec
-        else:
+        else:  # pragma: no cover
             raise TypeError('spec should be one of path, file obj, spec string')
         if isinstance(spec_content, dict):
             self.spec = spec_content
         else:
             try:
                 self.spec = json.loads(spec_content, object_pairs_hook=OrderedDict)
-            except Exception:
+            except Exception:  # pragma: no cover
                 if not yaml:
                     raise ImportError("No module named yaml")
                 try:
@@ -289,6 +294,11 @@ class SwaggerNode(object):
 
     as a schema, it can generate a model object of the definition, decode or encode the payload
     """
+    _node_cache = {}
+
+    def __new__(cls, root, node, path, parent=None, name=None):
+        key = tuple(path)
+        return cls._node_cache.setdefault(key, object.__new__(cls))
 
     def __init__(self, root, node, path, parent=None, name=None):
         self._root = root
@@ -405,10 +415,16 @@ class SwaggerNode(object):
                     return rt
 
                 def decode(data):
-                    return PROP_DECODERS[self.format](PROP_DECODERS[self.type](data))
+                    r = PROP_DECODERS[self.format](PROP_DECODERS[self.type](data))
+                    if self._is_enum:
+                        m = name_to_model.get(self._path[-1])
+                        if m:
+                            r = m(r)
+                    return r
 
                 def getModel():
-                    return lambda x: x.value if isinstance(x, enum.Enum) else x
+                    return lambda x: x
+                    # return lambda x: x.value if isinstance(x, enum.Enum) else x
 
                 self.format = node.get('format', None)
                 self.default = node.get('default', None)
@@ -517,7 +533,7 @@ class SwaggerNode(object):
         return "SwaggerNode(ref='%s')" % self._ref
 
 
-if __name__ == '__main__':
+if __name__ == '__main__':  # pragma: no cover
     with open(os.path.join(os.path.dirname(__file__), 'rpc.swagger.json')) as f:
         spec = json.load(f)
     sh = SwaggerSpec(spec)

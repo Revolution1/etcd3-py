@@ -103,14 +103,20 @@ class etcdserverpbAlarmType(enum.Enum):
     NOSPACE = 'NOSPACE'
 
 
+name_to_model = {
+    'AlarmRequestAlarmAction': AlarmRequestAlarmAction,
+    'CompareCompareResult': CompareCompareResult,
+    'CompareCompareTarget': CompareCompareTarget,
+    'EventEventType': EventEventType,
+    'RangeRequestSortOrder': RangeRequestSortOrder,
+    'RangeRequestSortTarget': RangeRequestSortTarget,
+    'WatchCreateRequestFilterType': WatchCreateRequestFilterType,
+    'authpbPermissionType': authpbPermissionType,
+    'etcdserverpbAlarmType': etcdserverpbAlarmType,
+}
 __all__ = [
-    'AlarmRequestAlarmAction',
-    'CompareCompareResult',
-    'CompareCompareTarget',
-    'EventEventType',
-    'RangeRequestSortOrder',
-    'RangeRequestSortTarget',
-    'WatchCreateRequestFilterType',
-    'authpbPermissionType',
-    'etcdserverpbAlarmType',
+    'AlarmRequestAlarmAction', 'CompareCompareResult', 'CompareCompareTarget',
+    'EventEventType', 'RangeRequestSortOrder', 'RangeRequestSortTarget',
+    'WatchCreateRequestFilterType', 'authpbPermissionType',
+    'etcdserverpbAlarmType', 'name_to_model'
 ]

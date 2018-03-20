@@ -7,14 +7,20 @@ import enum
 class {{e._path | last}}(enum.Enum):
     """
     ref: {{ e._ref }}
-    
+
     default: {{ e.default }}
     """
     {% for prop in e.enum %}{{ prop.name }} = '{{ prop.value }}'
     {% endfor %}
 {% endfor %}
+name_to_model = {
+{% for e in enums %}
+    '{{e._path | last}}': {{e._path | last}},{% endfor %}
+}
 __all__ = [{% for e in enums %}
-    '{{e._path | last}}',{% endfor %}
+    '{{e._path | last}}',
+    {% endfor %}
+    'name_to_model'
 ]
 
 '''
