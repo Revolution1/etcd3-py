@@ -10,7 +10,7 @@ __all__ = ['__version__', '__author__', '__email__']
 from .client import Client
 
 AioClient = None
-if six.PY3: # pragma: no cover
+if six.PY3:  # pragma: no cover
     from .aio_client import AioClient
 
 __all__.extend([
@@ -19,7 +19,14 @@ __all__.extend([
 ])
 
 from .stateful import Txn
+from .stateful import Watcher
+from .stateful import Lease
+
+from .stateful.watch import EventType
 
 __all__.extend([
-    'Txn'
+    'Txn',
+    'Watcher',
+    'Lease',
+    'EventType'
 ])
