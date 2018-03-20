@@ -44,7 +44,7 @@ def test_watch_api(client, request):
 
     times = 5
     created = False
-    with client.watch_create(all=True) as r:
+    with client.watch_create(all=True, prev_kv=True) as r:
         for i in r:
             if not times:  # pragma: no cover
                 break

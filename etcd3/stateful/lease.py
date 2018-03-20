@@ -8,7 +8,7 @@ import time
 from ..errors import ErrLeaseNotFound
 from ..utils import retry
 
-log = logging.getLogger(__name__)
+log = logging.getLogger('etcd3.Lease')
 
 
 class Lease(object):
@@ -76,7 +76,7 @@ class Lease(object):
 
         def keepalived():
             while self.keeping:
-                retry(lambda: self.client.lease_keep_alive_once(self.ID), max_tries=3, log=log)
+                retry(lambda: self.keepalive_once(), max_tries=3, log=log)
                 self.last_keep = time.time()
                 log.debug("keeping lease %d" % self.ID)
                 if keep_cb:

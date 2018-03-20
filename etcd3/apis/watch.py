@@ -61,8 +61,8 @@ class WatchAPI(BaseAPI):
         :param all: all the keys [default: False]
         :type no_put: bool
         :param no_put: filter out the put events at server side before it sends back to the watcher. [default: False]
-        :type filters: bool
-        :param filters: filter out the delete events at server side before it sends back to the watcher. [default: False]
+        :type no_delete: bool
+        :param no_delete: filter out the delete events at server side before it sends back to the watcher. [default: False]
         """
         if all:
             key = range_end = '\0'

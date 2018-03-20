@@ -1,7 +1,6 @@
 import pytest
 
 from etcd3 import Client
-from etcd3 import Txn
 from .envs import protocol, host, port
 from .etcd_go_cli import etcdctl, NO_ETCD_SERVICE
 

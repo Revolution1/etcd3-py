@@ -1,5 +1,6 @@
 # flake8: noqa
-from .transaction import Txn
 from .lease import Lease
+from .transaction import Txn
+from .watch import Watcher
 
-__all__ = ['Txn', 'Lease']
+__all__ = ['Txn', 'Lease', 'Watcher']

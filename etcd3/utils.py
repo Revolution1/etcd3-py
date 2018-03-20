@@ -302,16 +302,16 @@ def _enum_value(e):  # pragma: no cover
     return e
 
 
-def retry(func, max_tries=3, log=logging):  # pragma: no cover
+def retry(func, max_tries=3, log=logging, err_cls=Exception):  # pragma: no cover
     i = 1
     while True:
         try:
             time.sleep(0.3)
             func()
             break
-        except Exception as e:
+        except err_cls as e:
             if i < max_tries:
-                log.debug("try function failed (times:%d) retrying %s" % (i, e))
+                log.debug("%s() failed (times:%d) retrying %s" % (func.__name__, i, e))
                 i += 1
             else:
                 raise

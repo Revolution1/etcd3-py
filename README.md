@@ -33,7 +33,7 @@ Notice: The authentication header through gRPC-JSON-Gateway only supported in [e
     * [x] Maintenance
     * [x] Extra APIs
 * [ ] stateful utilities
-    * [ ] Watch
+    * [x] Watch
     * [x] Lease
     * [x] Transaction
     * [ ] Lock
@@ -93,6 +93,20 @@ etcdserverpbTxnResponse(header=etcdserverpbResponseHeader(cluster_id=11588568905
 ...     r = lease.time_to_live(keys=True)
 ...     assert set(r.keys) == {b'foo', b'fizz'}
 ...     assert lease.alive()
+```
+
+**Watch Util**
+```python
+>>> from etcd3 import Client
+>>> client = Client()
+>>> watcher=c.Watcher(all=True, progress_notify=True, prev_kv=True)
+>>> w.onEvent('f.*', lambda e: print(e.key, e.value))
+>>> w.runDaemon()
+>>> # etcdctl put foo bar
+>>> # etcdctl put foz bar
+b'foo' b'bar'
+b'foz' b'bar'
+>>> w.stop()
 ```
 
 ## TODO
