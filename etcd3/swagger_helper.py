@@ -15,7 +15,7 @@ from .utils import memoize_in_object
 try:
     import yaml
     import yaml.resolver
-except ImportError: # pragma: no cover
+except ImportError:  # pragma: no cover
     yaml = None
 
 if six.PY2:  # pragma: no cover
@@ -25,7 +25,7 @@ else:
 
 try:
     from .models import name_to_model
-except ImportError: # pragma: no cover
+except ImportError:  # pragma: no cover
     name_to_model = {}
 
 
@@ -294,6 +294,11 @@ class SwaggerNode(object):
 
     as a schema, it can generate a model object of the definition, decode or encode the payload
     """
+    _node_cache = {}
+
+    def __new__(cls, root, node, path, parent=None, name=None):
+        key = tuple(path)
+        return cls._node_cache.setdefault(key, object.__new__(cls))
 
     def __init__(self, root, node, path, parent=None, name=None):
         self._root = root
