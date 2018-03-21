@@ -47,7 +47,7 @@ class KeyValue(object):  # pragma: no cover
 class Event(KeyValue):
     def __init__(self, data):
         super(Event, self).__init__(data.kv._data)
-        self.type = getattr(data, 'type', EventType.PUT)  # default is PUT
+        self.type = data.type or EventType.PUT  # default is PUT
         self._data['type'] = self.type
         self.prev_kv = None
         if 'prev_kv' in data:
@@ -61,7 +61,7 @@ class Event(KeyValue):
 class Watcher(object):
     @check_param(at_least_one_of=['key', 'all'], at_most_one_of=['range_end', 'prefix', 'all'])
     def __init__(self, client, max_retries=-1, key=None, range_end=None, start_revision=None, progress_notify=None,
-                 prev_kv=None, prefix=None, all=None, no_put=False, no_delete=False):
+                 prev_kv=None, prefix=None, all=None, no_put=False, no_delete=False, timeout=None):
         """
         Initialize a watcher
 
@@ -105,6 +105,7 @@ class Watcher(object):
         self.max_retries = max_retries
         self.callbacks = []
         self.watching = False
+        self.timeout = timeout
 
         self._thread = None
         self._resp = None
@@ -125,20 +126,14 @@ class Watcher(object):
         return self.client.watch_create(
             key=self.key, range_end=self.range_end, start_revision=self.start_revision,
             progress_notify=self.progress_notify, prev_kv=self.prev_kv,
-            prefix=self.prefix, all=self.all, no_put=self.no_put, no_delete=self.no_delete
+            prefix=self.prefix, all=self.all, no_put=self.no_put, no_delete=self.no_delete,
+            timeout=self.timeout
         )
 
     def request_cancel(self):  # pragma: no cover
         pass
 
-    def onEvent(self, match_or_cb, cb=None):
-        if cb:
-            match = match_or_cb
-        else:
-            match = None
-            cb = match_or_cb
-        if not callable(cb):
-            raise TypeError('callback should be a callable')
+    def get_matcher(self, match):
         if callable(match):
             match_func = match
         elif isinstance(match, (six.string_types, bytes)):
@@ -158,7 +153,17 @@ class Watcher(object):
             match_func = lambda e: e.type == match
         else:
             raise TypeError('expect match to be one of string, EventType, callable got %s' % type(match))
-        self.callbacks.append((match_func, match, cb))
+        return match_func
+
+    def onEvent(self, match_or_cb, cb=None):
+        if cb:
+            match = match_or_cb
+        else:
+            match = None
+            cb = match_or_cb
+        if not callable(cb):
+            raise TypeError('callback should be a callable')
+        self.callbacks.append((self.get_matcher(match), match, cb))
 
     def clear_callbacks(self):
         self.callbacks = []
@@ -188,20 +193,19 @@ class Watcher(object):
 
     def stop(self):
         if self.watching == False:
-            raise RuntimeError("not watching")
-        log.debug("watching stopping")
+            log.debug("try to stop, but not watching")
+        log.debug("stopping watcher")
         self.watching = False
+        if not self._resp or (self._resp and self._resp.raw.closed):
+            return
         try:
-            # if six.PY2:
-            #     self._resp.raw._fp.close()
-            # else:
-            # self._resp.raw._connection.close()
-            # self._resp.raw._fp.close()
             s = socket.fromfd(self._resp.raw._fp.fileno(), socket.AF_INET, socket.SOCK_STREAM)
             s.shutdown(socket.SHUT_RDWR)
             s.close()
         except Exception:
             self._resp.connection.close()
+        if self._thread:
+            self._thread.join()
 
     cancel = stop
 
@@ -236,6 +240,21 @@ class Watcher(object):
         t = self._thread = threading.Thread(target=self.run)
         t.setDaemon(True)
         t.start()
+
+    def watch_once(self, match=None, timeout=None):
+        matcher = self.get_matcher(match)
+        old_timeout = self.timeout
+        self.timeout = timeout
+        try:
+            with self:
+                for event in self:
+                    if matcher(event):
+                        self.stop()
+                        return event
+        except (ConnectionError, ChunkedEncodingError):  # timeout
+            return
+        finally:
+            self.timeout = old_timeout
 
     def __enter__(self):
         if self.watching == True:

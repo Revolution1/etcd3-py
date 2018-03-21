@@ -39,7 +39,7 @@ def test_stream(client):
                 created = i.created
                 assert created
             etcdctl('put test_key test_value')
-            if hasattr(i, 'events'):
+            if i.events:
                 assert i.events[0].kv.key == b'test_key'
                 assert i.events[0].kv.value == b'test_value'
                 times -= 1
@@ -68,7 +68,7 @@ def test_patched_stream(client, monkeypatch):
             if not created:
                 created = i.created
                 assert created
-            if hasattr(i, 'events'):
+            if i.events:
                 assert i.events[0].kv.key == b'test_key'
                 assert i.events[0].kv.value == b'test_value'
                 times -= 1

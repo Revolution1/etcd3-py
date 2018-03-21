@@ -8,7 +8,7 @@ from ..utils import check_param, incr_last_byte, Etcd3Warning
 class WatchAPI(BaseAPI):
     @check_param(at_least_one_of=['create_request', 'cancel_request'],
                  at_most_one_of=['create_request', 'cancel_request'])
-    def watch(self, create_request=None, cancel_request=None):
+    def watch(self, create_request=None, cancel_request=None, **kwargs):
         """
         PLEASE USE THE WATCH UTIL
 
@@ -29,11 +29,11 @@ class WatchAPI(BaseAPI):
             "cancel_request": cancel_request
         }
         data = {k: v for k, v in data.items() if v is not None}
-        return self.call_rpc(method, data=data, stream=True)
+        return self.call_rpc(method, data=data, stream=True, **kwargs)
 
     @check_param(at_least_one_of=['key', 'all'], at_most_one_of=['range_end', 'prefix', 'all'])
     def watch_create(self, key=None, range_end=None, start_revision=None, progress_notify=None, prev_kv=None,
-                     prefix=False, all=False, no_put=False, no_delete=False):
+                     prefix=False, all=False, no_put=False, no_delete=False, **kwargs):
         """
         WatchCreate creates a watch stream on given key or key_range
 
@@ -82,9 +82,9 @@ class WatchAPI(BaseAPI):
             "prev_kv": prev_kv
         }
         data = {k: v for k, v in data.items() if v is not None}
-        return self.watch(create_request=data)
+        return self.watch(create_request=data, **kwargs)
 
-    def watch_cancel(self, watch_id):  # pragma: no cover
+    def watch_cancel(self, watch_id, **kwargs):  # pragma: no cover
         """
         NOT SUPPORTED UNDER ETCD 3.3-
 
@@ -103,4 +103,4 @@ class WatchAPI(BaseAPI):
         data = {
             "watch_id": watch_id
         }
-        return self.watch(cancel_request=data)
+        return self.watch(cancel_request=data, **kwargs)

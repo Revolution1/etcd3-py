@@ -28,11 +28,11 @@ def test_lease_util(client):
         hexid = hex(ID)[2:]
         etcdctl('put --lease=%s foo bar' % hexid)
         etcdctl('put --lease=%s fizz buzz' % hexid)
-        time.sleep(2)
+        time.sleep(TTL)
         r = lease.time_to_live(keys=True)
         assert r.ID == ID
         assert r.grantedTTL == TTL
-        assert r.TTL < TTL
+        assert r.TTL <= TTL
         assert set(r.keys) == {b'foo', b'fizz'}
         # time.sleep(100)
         assert lease.keeping
@@ -40,7 +40,6 @@ def test_lease_util(client):
         assert not lease.jammed()
         assert lease._thread.is_alive()
 
-    time.sleep(TTL)
     assert not lease.alive()
     assert not lease.keeping
     assert not lease._thread.is_alive()
@@ -54,7 +53,6 @@ def test_lease_util(client):
     lease.grant()
     lease.keepalive(keep_cb=keep_cb, cancel_cb=cancel_cb)
     lease.cancel_keepalive()
-    time.sleep(TTL * 0.8)
     assert keep_cb.called
     assert cancel_cb.called
 

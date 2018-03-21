@@ -54,7 +54,7 @@ def test_transaction(client):
             assert i.response_range.kvs[0].value == b'bar'
         else:  # delete
             assert i.response_delete_range.deleted == 1
-    assert 'kvs' not in client.range('fizz')
+    assert not client.range('fizz').kvs
 
     with pytest.raises(NotImplementedError):
         txn.If(txn.key('foo').value >= b'1')

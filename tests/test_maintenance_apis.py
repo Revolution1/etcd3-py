@@ -3,7 +3,7 @@ import json
 import pytest
 import six
 
-from etcd3.client import Client
+from etcd3 import Client
 from etcd3.models import etcdserverpbAlarmType
 from .envs import protocol, host, port
 from .etcd_go_cli import NO_ETCD_SERVICE, etcdctl
