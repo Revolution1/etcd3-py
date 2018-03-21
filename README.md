@@ -12,8 +12,9 @@ Python client for etcd v3 (Using gRPC-JSON-Gateway)
 * Free software: Apache Software License 2.0
 * Source Code: https://github.com/Revolution1/etcd3-py
 * Documentation: https://etcd3-py.readthedocs.io.
+* etcd version required: v3.3.0+
 
-Notice: The authentication header through gRPC-JSON-Gateway only supported in [etcd v3.3+](https://github.com/coreos/etcd/pull/7999)
+Notice: The authentication header through gRPC-JSON-Gateway only supported in [etcd v3.3.0+](https://github.com/coreos/etcd/pull/7999)
 
 ## Features
 
@@ -134,6 +135,22 @@ user1 got the lock
 user1 releasing the lock
 user2 got the lock
 user2 releasing the lock
+```
+
+**Start a single-node etcd using docker**
+```bash
+export NODE1=0.0.0.0
+export ETCD_VER=v3.3
+docker run -d \
+-p 2379:2379 \
+-p 2380:2380 \
+--volume=/tmp/etcd3-data:/etcd-data \
+--name etcd3 quay.io/coreos/etcd:$ETCD_VER \
+/usr/local/bin/etcd \
+--data-dir=/etcd-data --name node1 \
+--initial-advertise-peer-urls http://${NODE1}:2380 --listen-peer-urls http://${NODE1}:2380 \
+--advertise-client-urls http://${NODE1}:2379 --listen-client-urls http://${NODE1}:2379 \
+--initial-cluster node1=http://${NODE1}:2380
 ```
 
 ## TODO

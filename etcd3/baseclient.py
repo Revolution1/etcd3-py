@@ -6,7 +6,6 @@ import abc
 import os
 import warnings
 
-import requests
 import semantic_version as sem
 from six.moves import urllib_parse
 
@@ -78,17 +77,19 @@ class BaseClient(AuthAPI, ClusterAPI, KVAPI, LeaseAPI, MaintenanceAPI, WatchAPI,
 
     def _retrieve_version(self):  # pragma: no cover
         try:
-            r = requests.get(self._url('/version'), timeout=0.3)
+            import requests
+
+            r = requests.get(self._url('/version'), timeout=0.3) # 300ms will do
             r.raise_for_status()
             v = r.json()
             self.cluster_version = v["etcdcluster"]
             if sem.compare(self.cluster_version, '3.3.0') == -1:
                 warnings.warn(Etcd3Warning("detected etcd cluster version(%s) is lower than 3.3.0, "
-                                           "auth method may not work" % self.cluster_version))
+                                           "the gRPC-JSON-Gateway may not work" % self.cluster_version))
         except Exception:
             warnings.warn(Etcd3Warning("cannot detect etcd server version\n"
                                        "1. maybe is a network problem, please check your network connection\n"
-                                       "2. maybe your etcd server version is too low, recommended: 3.3.0+"))
+                                       "2. maybe your etcd server version is too low, required: 3.3.0+"))
 
     @property
     def baseurl(self):

@@ -16,9 +16,13 @@ services:
 services:
   - docker
 
+env:
+  matrix:
+    - ETCD_VER=v3.3
+
 before_install:
-  - docker pull quay.io/coreos/etcd:v3.3
-  - docker run -d -p 2379:2379 -p 2380:2380 --name etcd3 quay.io/coreos/etcd:v3.3 etcd --name node1 --initial-advertise-peer-urls http://0.0.0.0:2380 --listen-peer-urls http://0.0.0.0:2380 --advertise-client-urls http://0.0.0.0:2379 --listen-client-urls http://0.0.0.0:2379 --initial-cluster node1=http://0.0.0.0:2380
+  - docker pull quay.io/coreos/etcd:$ETCD_VER
+  - docker run -d -p 2379:2379 -p 2380:2380 --name etcd3 quay.io/coreos/etcd:$ETCD_VER etcd --name node1 --initial-advertise-peer-urls http://0.0.0.0:2380 --listen-peer-urls http://0.0.0.0:2380 --advertise-client-urls http://0.0.0.0:2379 --listen-client-urls http://0.0.0.0:2379 --initial-cluster node1=http://0.0.0.0:2380
   - docker ps
   - sudo docker cp etcd3:/usr/local/bin/etcdctl /usr/bin/etcdctl
   - which etcdctl
@@ -39,6 +43,6 @@ deploy:
     secure: b/Ft9tCIAPddI7vkGCMZlkKWRi7Ahn73UMuXA+ZFhmTNQqM1SLjzUihfkrOJM5IzJC/42xCAxN6dgn2RpdqhJq5KhjlApFcPZawN1+S154jbjS/ss2Jn5ckryLFeITq8Fvud368r3i3EpqkEix0UK3QqMc5llnE/JtDPOS53azlKCetg6LAeMn4WrPwu74BC1lOSPG6fbW3OJ2o1Gu+/ToQrIoZUvy9yD7CyIto5OMIHI+hVV9TCJ8o6jQhAnWj5RxVJMmuONCpQ41cPVjIpvldakuxpFqH3mmGdPD7Nc4h7cmXbwthZLlBcI2oyFTxL9R5r4Sey8aFO/H5WaaBJMBauaAurLYkCVU4FIDxiTb/KwP09DnVWKlaXKB9Buv+LdO+IvG70VkkVFpeDxZ74VpvADoT+fx4gCSmPJiMDZGS2pxn7jcwH3qatWZ2aJZBg8DAMGNP+9AX+MNLFrPsipZQvl8Hq4DyztjLxjG//jwUwCzA5YrvXgBQmVQ40T64OZxTs//HS8GGE0zeb5FHwTXjomqp8bCOfIfpVwgmrkOY8d/fCz94JUtiUnU53EWqFQtfXiUIV5wAZzu5hVGGhghfw5yrgE4D/vp5ZwTH2/hY8n+VAOh4pimX0X+ob/LLMl4mnX64EPbwDKvx+beRPYxFBsOOZfAHoG6QszinVlao=
   on:
     tags: true
-    branch: master
-    python:
-      - 3.6
+#    branch: master
+#    python:
+#      - 3.6
