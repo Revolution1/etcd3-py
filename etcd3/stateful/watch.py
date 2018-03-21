@@ -202,6 +202,8 @@ class Watcher(object):
             s.close()
         except Exception:
             self._resp.connection.close()
+        if self._thread:
+            self._thread.join()
 
     cancel = stop
 

@@ -34,11 +34,13 @@ def test_watcher(client):
     assert len(w.callbacks) == 4
 
     w.runDaemon()
-    # with pytest.raises(RuntimeError):
-    #     w.runDaemon()
-    #     w.run()
-
     time.sleep(0.2)
+
+    with pytest.raises(RuntimeError):
+        w.runDaemon()
+    with pytest.raises(RuntimeError):
+        w.run()
+
     assert w.watching
     assert w._thread.is_alive
 
@@ -52,7 +54,6 @@ def test_watcher(client):
     time.sleep(1)
     w.stop()
 
-    time.sleep(0.5)
     assert not w.watching
     assert not w._thread.is_alive()
 
@@ -103,8 +104,8 @@ def test_watcher(client):
             s.close()
             times -= 1
 
-    w._thread.join()
-    assert not w.watching
+    assert not w._thread.join()
     assert not w._thread.is_alive()
+    assert not w.watching
     assert w._resp.raw.closed
     assert len(w.errors) == max_retries

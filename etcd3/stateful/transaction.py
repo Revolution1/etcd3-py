@@ -31,6 +31,14 @@ class Txn(object):
         self._success = success or []
         self._failure = failure or []
 
+    def clear(self):  # pragma: no cover
+        """
+        clear all ops
+        """
+        self._compare = []
+        self._success = []
+        self._failure = []
+
     def compare(self, compareOp):
         if isinstance(compareOp, TxnCompareOp):
             compareOp = compareOp.to_dict()

@@ -72,12 +72,6 @@ class Lease(object):
 
     refresh = keepalive_once
 
-    # def keepalive(self, stream_cb=None, cancel_cb=None):
-    #     self.fifo = produce_stream(b'{"ID":%d}\n' % self.ID, self.grantedTTL / 4.0,
-    #                                stream_cb=stream_cb, cancel_cb=cancel_cb)
-    #     self.stream_conn = self.client.lease_keep_alive(self.fifo)
-    #     return self.stream_conn
-
     def keepalive(self, keep_cb=None, cancel_cb=None):
         self.keeping = True
 
@@ -106,8 +100,10 @@ class Lease(object):
         t.setDaemon(True)
         t.start()
 
-    def cancel_keepalive(self):
+    def cancel_keepalive(self, join=True):
         self.keeping = False
+        if join and self._thread and self._thread.is_alive():
+            self._thread.join()
 
     def jammed(self):
         """
@@ -118,6 +114,7 @@ class Lease(object):
         return time.time() - self.last_keep > self.grantedTTL / 4.0
 
     def revoke(self):
+        self.cancel_keepalive(False)
         return self.client.lease_revoke(self.ID)
 
     def __enter__(self):
@@ -128,74 +125,3 @@ class Lease(object):
     def __exit__(self, exc_type, exc_val, exc_tb):
         self.cancel_keepalive()
         self.revoke()
-
-# def produce_stream(data, interval, q=None, stream_cb=None, cancel_cb=None):
-#     """
-#     :param data: data to put into stream
-#     :param interval: put interval
-#     :param q: queue that handles put
-#     :param stream_cb: callback when put
-#     :param cancel_cb: callback when stream canceled
-#     :return: StreamFIFO
-#     """
-#     q = q or StreamFIFO(maxsize=128)
-#
-#     def _put():
-#         while True:
-#             try:
-#                 q.put(data)
-#                 log.debug("produced a stream chunk")
-#                 if stream_cb:
-#                     stream_cb()
-#                 time.sleep(interval)
-#             except StreamClosed:
-#                 log.debug("exiting due to stream closed")
-#                 if cancel_cb:
-#                     cancel_cb()
-#                 break
-#             except Exception as e:
-#                 raise
-#
-#     t = threading.Thread(target=_put)
-#     t.setDaemon(True)
-#     t.start()
-#     return q
-
-
-# class StreamClosed(ValueError):
-#     pass
-
-
-# class StreamFIFO(Queue):
-#     def __init__(self, maxsize=0):
-#         super(StreamFIFO, self).__init__(maxsize=maxsize)
-#         self._closed = False
-#         self.last_get = None
-#
-#     @property
-#     def closed(self):
-#         return self._closed
-#
-#     def put(self, item, block=True, timeout=None):
-#         if self.closed:
-#             raise StreamClosed("put on a closed stream")
-#         return super(StreamFIFO, self).put(item, block, timeout)
-#
-#     def get(self, block=True, timeout=None):
-#         if self.closed:
-#             raise StreamClosed("get on a closed stream")
-#         self.last_get = time.time()
-#         return super(StreamFIFO, self).get(block, timeout)
-#
-#     def __iter__(self):
-#         r = self.get()
-#         if not r:
-#             raise StopIteration
-#         yield r
-#
-#     def close(self):
-#         self.queue.clear()
-#         self._closed = True
-
-# def read(self, n):
-#     return self.get()
