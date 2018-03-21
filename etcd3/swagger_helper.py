@@ -356,6 +356,7 @@ class SwaggerNode(object):
                         this._data = data
                         for k in self.properties._keys():
                             if k not in data:
+                                setattr(this, k, None)
                                 continue
                             v = data[k]
                             m = self.properties._get(k)

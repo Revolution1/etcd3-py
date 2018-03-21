@@ -22,16 +22,19 @@ def client():
 def test_watcher(client):
     max_retries = 3
     w = client.Watcher(all=True, progress_notify=True, prev_kv=True, max_retries=max_retries)
+
     foo_list = []
     fizz_list = []
     all_list = []
     del_list = []
+    put_list = []
     w.onEvent(lambda e: e.key == b'foo', lambda e: foo_list.append(e))
     w.onEvent('fiz.', lambda e: fizz_list.append(e))
     w.onEvent(EventType.DELETE, lambda e: del_list.append(e))
+    w.onEvent(EventType.PUT, lambda e: put_list.append(e))
     w.onEvent(lambda e: all_list.append(e))
 
-    assert len(w.callbacks) == 4
+    assert len(w.callbacks) == 5
 
     w.runDaemon()
     time.sleep(0.2)
@@ -60,6 +63,7 @@ def test_watcher(client):
     assert len(foo_list) == 3
     assert len(fizz_list) == 3
     assert len(del_list) == 1
+    assert len(put_list) == 5
     assert len(all_list) == 6
 
     etcdctl('put foo bar')
@@ -98,7 +102,7 @@ def test_watcher(client):
     times = max_retries + 1
     while times:
         time.sleep(0.5)
-        if not w._resp.raw.closed: # directly close the tcp connection
+        if not w._resp.raw.closed:  # directly close the tcp connection
             s = socket.fromfd(w._resp.raw._fp.fileno(), socket.AF_INET, socket.SOCK_STREAM)
             s.shutdown(socket.SHUT_RDWR)
             s.close()

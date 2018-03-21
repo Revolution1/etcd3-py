@@ -114,6 +114,7 @@ class Lease(object):
         return time.time() - self.last_keep > self.grantedTTL / 4.0
 
     def revoke(self):
+        log.debug("revoking lease %d" % self.ID)
         self.cancel_keepalive(False)
         return self.client.lease_revoke(self.ID)
 

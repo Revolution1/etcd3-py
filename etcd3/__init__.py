@@ -21,6 +21,7 @@ __all__.extend([
 from .stateful import Txn
 from .stateful import Watcher
 from .stateful import Lease
+from .stateful import Lock
 
 from .stateful.watch import EventType
 
@@ -28,5 +29,6 @@ __all__.extend([
     'Txn',
     'Watcher',
     'Lease',
+    'Lock',
     'EventType'
 ])

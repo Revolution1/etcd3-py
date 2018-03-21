@@ -37,7 +37,7 @@ def test_watch_api(client, request):
                 created = i.created
                 assert created
             etcdctl('put test_key test_value')
-            if hasattr(i, 'events'):
+            if i.events:
                 assert i.events[0].kv.key == b'test_key'
                 assert i.events[0].kv.value == b'test_value'
                 times -= 1
@@ -52,7 +52,7 @@ def test_watch_api(client, request):
                 created = i.created
                 assert created
             etcdctl('put test_key test_value')
-            if hasattr(i, 'events'):
+            if i.events:
                 assert i.events[0].kv.key == b'test_key'
                 assert i.events[0].kv.value == b'test_value'
                 times -= 1
@@ -67,7 +67,7 @@ def test_watch_api(client, request):
                 created = i.created
                 assert created
             etcdctl('put test_key test_value')
-            if hasattr(i, 'events'):
+            if i.events:
                 assert i.events[0].kv.key == b'test_key'
                 assert i.events[0].kv.value == b'test_value'
                 times -= 1

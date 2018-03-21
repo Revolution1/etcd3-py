@@ -32,11 +32,11 @@ Notice: The authentication header through gRPC-JSON-Gateway only supported in [e
     * [x] Lease
     * [x] Maintenance
     * [x] Extra APIs
-* [ ] stateful utilities
+* [x] stateful utilities
     * [x] Watch
     * [x] Lease
     * [x] Transaction
-    * [ ] Lock
+    * [x] Lock
 
 ## Quick Start
 
@@ -105,6 +105,35 @@ etcdserverpbTxnResponse(header=etcdserverpbResponseHeader(cluster_id=11588568905
 b'foo' b'bar'
 b'foz' b'bar'
 >>> w.stop()
+```
+
+**Lock Util**
+```python
+>>> import time
+>>> from threading import Thread
+>>> from etcd3 import Client
+>>> client = Client()
+>>> name = 'lock_name'
+>>> def user1():
+...     with client.Lock(name, lock_ttl=5):
+...         print('user1 got the lock')
+...         time.sleep(5)
+...         print('user1 releasing the lock')
+>>> def user2():
+...     with client.Lock(name, lock_ttl=5):
+...         print('user2 got the lock')
+...         time.sleep(5)
+...         print('user2 releasing the lock')
+>>> t1 = Thread(target=user1, daemon=True)
+>>> t2 = Thread(target=user2, daemon=True)
+>>> t1.start()
+>>> t2.start()
+>>> t1.join()
+>>> t2.join()
+user1 got the lock
+user1 releasing the lock
+user2 got the lock
+user2 releasing the lock
 ```
 
 ## TODO

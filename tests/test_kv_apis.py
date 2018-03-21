@@ -76,7 +76,7 @@ def test_delete(client, request):
     client.put('fop', 'bar')
     assert len(client.range('fo', prefix=True).kvs) == 2
     client.delete_range('fo', prefix=True)
-    assert 'kvs' not in client.range('fo', prefix=True)
+    assert not client.range('fo', prefix=True).kvs
 
 
 @pytest.mark.skipif(NO_ETCD_SERVICE, reason="no etcd service available")
@@ -114,7 +114,7 @@ def test_txn(client, request):
 
     r = client.txn(compare, success, fail)
     assert r.succeeded == True
-    assert 'kvs' not in client.range('fizz')
+    assert not client.range('fizz').kvs
     assert client.range('foo').kvs[0].value == b'bra'
 
     etcdctl('put flag ok')

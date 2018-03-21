@@ -18,6 +18,7 @@ from .apis import LeaseAPI
 from .apis import MaintenanceAPI
 from .apis import WatchAPI
 from .stateful import Lease
+from .stateful import Lock
 from .stateful import Txn
 from .stateful import Watcher
 from .swagger_helper import SwaggerSpec
@@ -209,7 +210,7 @@ class BaseClient(AuthAPI, ClusterAPI, KVAPI, LeaseAPI, MaintenanceAPI, WatchAPI,
         return Lease(self, ttl=ttl, ID=ID, new=new)
 
     def Watcher(self, key=None, range_end=None, max_retries=-1, start_revision=None, progress_notify=None,
-                prev_kv=None, prefix=None, all=None, no_put=False, no_delete=False):
+                prev_kv=None, prefix=None, all=None, no_put=False, no_delete=False, timeout=None):
         """
         Initialize a Watcher
 
@@ -246,4 +247,7 @@ class BaseClient(AuthAPI, ClusterAPI, KVAPI, LeaseAPI, MaintenanceAPI, WatchAPI,
         return Watcher(client=self, key=key, range_end=range_end, max_retries=max_retries,
                        start_revision=start_revision,
                        progress_notify=progress_notify, prev_kv=prev_kv, prefix=prefix, all=all, no_put=no_put,
-                       no_delete=no_delete)
+                       no_delete=no_delete, timeout=timeout)
+
+    def Lock(self, lock_name, lock_ttl=Lock.DEFAULT_LOCK_TTL, reentrant=None, lock_prefix='_locks'):
+        return Lock(self, lock_name=lock_name, lock_ttl=lock_ttl, reentrant=reentrant, lock_prefix=lock_prefix)
