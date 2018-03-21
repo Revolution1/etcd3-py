@@ -43,7 +43,7 @@ test_requirements = list({str(ir.req) for ir in test_reqs} - set(requirements))
 
 setup(
     name='etcd3-py',
-    version='0.1.2',
+    version='0.1.3',
     description="Python client for etcd v3 (Using gRPC-JSON-Gateway)",
     long_description=readme + '\n\n' + history,
     author="Renjie Cai",
