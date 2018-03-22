@@ -96,9 +96,12 @@ def test_watcher(client):
     assert not w.watching
     assert w._resp.raw.closed
 
-    # test retry
-    w.runDaemon()
+    with pytest.raises(TypeError): # ensure callbacks
+        w.runDaemon()
 
+    # test retry
+    w.onEvent(lambda e:None)
+    w.runDaemon()
     times = max_retries + 1
     while times:
         time.sleep(0.5)
