@@ -26,7 +26,7 @@ from .version import __version__
 
 rpc_swagger_json = os.path.join(os.path.dirname(__file__), 'rpc.swagger.json')
 
-swaggerSpec = SwaggerSpec(rpc_swagger_json)
+swaggerSpec = SwaggerSpec(rpc_swagger_json) # TODO: swagger json may changed and need to implement multiple version
 
 
 class BaseModelizedStreamResponse(object):  # pragma: no cover
@@ -73,19 +73,24 @@ class BaseClient(AuthAPI, ClusterAPI, KVAPI, LeaseAPI, MaintenanceAPI, WatchAPI,
         self.password = password
         self.token = token
         self.cluster_version = None
+        # TODO: /v3alpha will be deprecated an replaced by /v3 in v3.4
+        # TODO: /v3beta will be deprecated in v3.5
+        self.api_prefix = '/v3alpha'
         self._retrieve_version()
 
     def _retrieve_version(self):  # pragma: no cover
         try:
             import requests
 
-            r = requests.get(self._url('/version'), timeout=0.3) # 300ms will do
+            r = requests.get(self._url('/version'), timeout=0.3)  # 300ms will do
             r.raise_for_status()
             v = r.json()
             self.cluster_version = v["etcdcluster"]
-            if sem.compare(self.cluster_version, '3.3.0') == -1:
+            if sem.Version(self.cluster_version) < sem.Version('3.3.0'):
                 warnings.warn(Etcd3Warning("detected etcd cluster version(%s) is lower than 3.3.0, "
                                            "the gRPC-JSON-Gateway may not work" % self.cluster_version))
+            else:
+                self.api_prefix = '/v3'
         except Exception:
             warnings.warn(Etcd3Warning("cannot detect etcd server version\n"
                                        "1. maybe is a network problem, please check your network connection\n"
