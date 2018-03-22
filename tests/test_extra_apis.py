@@ -21,3 +21,7 @@ def test_version_api(client, monkeypatch):
     v = client.version()
     assert v.etcdserver == "3.3.0-rc.4"
     assert v.etcdcluster == "3.3.0"
+
+
+def test_health_api(client):
+    assert client.health()

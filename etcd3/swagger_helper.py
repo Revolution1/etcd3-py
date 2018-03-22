@@ -298,7 +298,7 @@ class SwaggerNode(object):
 
     def __new__(cls, root, node, path, parent=None, name=None):
         key = tuple(path)
-        return cls._node_cache.setdefault(key, object.__new__(cls))
+        return cls._node_cache.setdefault(root, {}).setdefault(key, object.__new__(cls))
 
     def __init__(self, root, node, path, parent=None, name=None):
         self._root = root
