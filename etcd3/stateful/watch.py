@@ -133,13 +133,13 @@ class Watcher(object):
     def request_cancel(self):  # pragma: no cover
         pass
 
-    def get_matcher(self, match):
-        if callable(match):
-            match_func = match
-        elif isinstance(match, (six.string_types, bytes)):
-            regex = re.compile(match)
+    def get_filter(self, filter):
+        if callable(filter):
+            filter_func = filter
+        elif isinstance(filter, (six.string_types, bytes)):
+            regex = re.compile(filter)
 
-            def match_func(e):
+            def filter_func(e):
                 key = e.key
                 if six.PY3:
                     try:
@@ -147,31 +147,31 @@ class Watcher(object):
                     except Exception:
                         return
                 return regex.match(key)
-        elif match is None:
-            match_func = lambda e: True
-        elif isinstance(match, EventType):
-            match_func = lambda e: e.type == match
+        elif filter is None:
+            filter_func = lambda e: True
+        elif isinstance(filter, EventType):
+            filter_func = lambda e: e.type == filter
         else:
-            raise TypeError('expect match to be one of string, EventType, callable got %s' % type(match))
-        return match_func
+            raise TypeError('expect filter to be one of string, EventType, callable got %s' % type(filter))
+        return filter_func
 
-    def onEvent(self, match_or_cb, cb=None):
+    def onEvent(self, filter_or_cb, cb=None):
         if cb:
-            match = match_or_cb
+            filter = filter_or_cb
         else:
-            match = None
-            cb = match_or_cb
+            filter = None
+            cb = filter_or_cb
         if not callable(cb):
             raise TypeError('callback should be a callable')
-        self.callbacks.append((self.get_matcher(match), match, cb))
+        self.callbacks.append((self.get_filter(filter), filter, cb))
 
     def clear_callbacks(self):
         self.callbacks = []
 
     def dispatch_event(self, event):
         log.debug("dispatching event '%s'" % event)
-        for match_func, match, cb in self.callbacks:
-            if match_func(event):
+        for filter, _, cb in self.callbacks:
+            if filter(event):
                 cb(event)
 
     def _run(self):
@@ -241,14 +241,14 @@ class Watcher(object):
         t.setDaemon(True)
         t.start()
 
-    def watch_once(self, match=None, timeout=None):
-        matcher = self.get_matcher(match)
+    def watch_once(self, filter=None, timeout=None):
+        filter = self.get_filter(filter)
         old_timeout = self.timeout
         self.timeout = timeout
         try:
             with self:
                 for event in self:
-                    if matcher(event):
+                    if filter(event):
                         self.stop()
                         return event
         except (ConnectionError, ChunkedEncodingError):  # timeout
