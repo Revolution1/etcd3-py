@@ -1,4 +1,4 @@
-class BaseAPI(object):
+class BaseAPI(object):  # pragma: no cover
     @staticmethod
     def _raise_for_status(resp):
         raise NotImplementedError

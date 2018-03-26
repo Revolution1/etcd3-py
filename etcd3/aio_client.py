@@ -249,7 +249,7 @@ class AioClient(BaseClient):
         self.token = None
         try:
             r = await self.authenticate(username, password)
-        except Exception:
+        except Exception:  # pragma: no cover
             self.token = old
             raise
         else:
