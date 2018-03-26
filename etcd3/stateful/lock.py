@@ -158,7 +158,7 @@ class Lock(object):  # TODO: maybe we could improve the performance by reduce so
 
     acquired = is_acquired
 
-    def acquire(self, block=True, lock_ttl=None, timeout=0, delete_key=True):
+    def acquire(self, block=True, lock_ttl=None, timeout=None, delete_key=True):
         """
         Acquire the lock.
 
@@ -261,5 +261,5 @@ class Lock(object):  # TODO: maybe we could improve the performance by reduce so
         locker = locker or self._get_locker()
         if not locker:
             return
-        watcher = self.client.Watcher(key=locker.key, max_retries=0, timeout=timeout)
-        return watcher.watch_once(lambda e: e.type == EventType.DELETE or e.value == self.uuid)
+        self.watcher = watcher = self.client.Watcher(key=locker.key, max_retries=0)
+        return watcher.watch_once(lambda e: e.type == EventType.DELETE or e.value == self.uuid, timeout=timeout)

@@ -7,7 +7,7 @@ from golang stdlib: net/http/status.go
 """
 
 
-class HTTPStatus(object):
+class HTTPStatus(object):  # pragma: no cover
     """
     HTTP status codes as registered with IANA.
     See: http://www.iana.org/assignments/http-status-codes/http-status-codes.xhtml

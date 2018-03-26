@@ -2,7 +2,7 @@ from .go_grpc_codes import GRPCCode as codes
 from .go_net_http_status import HTTPStatus as http
 
 
-def HTTPStatusFromCode(code):
+def HTTPStatusFromCode(code):  # pragma: no cover
     """
     HTTPStatusFromCode converts a gRPC error code into the corresponding HTTP response status.
     """
