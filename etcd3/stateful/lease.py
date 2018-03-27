@@ -36,9 +36,20 @@ class Lease(object):
 
     @property
     def ID(self):
+        """
+        Property: the id of the granted lease
+
+        :return: int
+        """
         return self._ID
 
     def grant(self):
+        """
+        Grant the lease if new is set to False
+        or it just inherit the lease of the specified id
+
+        When granting new lease if ID is set to 0, the lessor will chooses an ID.
+        """
         if self.new:
             r = self.client.lease_grant(self.grantedTTL, self.ID)
             self.last_grant = time.time()
@@ -56,23 +67,50 @@ class Lease(object):
             return r
 
     def time_to_live(self, keys=False):
+        """
+        Retrieves lease information.
+
+        :type keys: bool
+        :param keys: whether return the keys that attached to the lease
+        """
         return self.client.lease_time_to_live(self.ID, keys=keys)
 
     def ttl(self):
+        """
+        Get the ttl that lease has left
+
+        :return: int
+        """
         r = self.time_to_live()
         if 'TTL' not in r:
             return -1
         return r.TTL
 
     def alive(self):
+        """
+        Tell if the lease is still alive
+
+        :return: bool
+        """
         return self.ttl() > 0
 
     def keepalive_once(self):
+        """
+        Call keepalive for once to refresh the ttl of the lease
+        """
         return self.client.lease_keep_alive_once(self.ID)
 
     refresh = keepalive_once
 
     def keepalive(self, keep_cb=None, cancel_cb=None):
+        """
+        Start a daemon thread to constantly keep the lease alive
+
+        :type keep_cb: callable
+        :param keep_cb: callback function that will be called after every refresh
+        :type cancel_cb: callable
+        :param cancel_cb: callback function that will be called after cancel keepalive
+        """
         self.keeping = True
 
         def keepalived():
@@ -101,19 +139,28 @@ class Lease(object):
         t.start()
 
     def cancel_keepalive(self, join=True):
+        """
+        stop keeping-alive
+
+        :type join: bool
+        :param join: whether to wait the keepalive thread to exit
+        """
         self.keeping = False
         if join and self._thread and self._thread.is_alive():
             self._thread.join()
 
     def jammed(self):
         """
-        if is failed to keepalive
+        if is failed to keepalive at the last loop
         """
         if not self.keeping:
             return False
         return time.time() - self.last_keep > self.grantedTTL / 4.0
 
     def revoke(self):
+        """
+        revoke the lease
+        """
         log.debug("revoking lease %d" % self.ID)
         self.cancel_keepalive(False)
         return self.client.lease_revoke(self.ID)

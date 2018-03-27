@@ -23,9 +23,35 @@ class Txn(object):
     >>> txn.success(txn.put('foo', 'bra'))
     >>> txn.commit()
     etcdserverpbTxnResponse(header=etcdserverpbResponseHeader(cluster_id=11588568905070377092, member_id=128088275939295631, revision=15656, raft_term=4), succeeded=True, responses=[etcdserverpbResponseOp(response_put=etcdserverpbPutResponse(header=etcdserverpbResponseHeader(revision=15656)))])
+
+
+    From google paxosdb paper:
+
+    Our implementation hinges around a powerful primitive which we call MultiOp. All other database
+    operations except for iteration are implemented as a single call to MultiOp. A MultiOp is applied atomically
+    and consists of three components:
+
+    1.  A list of tests called guard. Each test in guard checks a single entry in the database. It may check
+        for the absence or presence of a value, or compare with a given value. Two different tests in the guard
+        may apply to the same or different entries in the database. All tests in the guard are applied and
+        MultiOp returns the results. If all tests are true, MultiOp executes t op (see item 2 below), otherwise
+        it executes f op (see item 3 below).
+
+    2.  A list of database operations called t op. Each operation in the list is either an insert, delete, or
+        lookup operation, and applies to a single database entry. Two different operations in the list may apply
+        to the same or different entries in the database. These operations are executed if guard evaluates to true.
+
+    3.  A list of database operations called f op. Like t op, but executed if guard evaluates to false.
     """
 
     def __init__(self, client, compare=None, success=None, failure=None):
+        """
+        :type client: BaseClient
+        :param client: the instance of etcd3's client
+        :param compare: guard components of the transaction, default to []
+        :param success: success components of the transaction, default to []
+        :param failure: failure components of the transaction, default to []
+        """
         self.client = client
         self._compare = compare or []
         self._success = success or []
@@ -40,20 +66,32 @@ class Txn(object):
         self._failure = []
 
     def compare(self, compareOp):
+        """
+        Add a test to the transaction guard component
+
+        :param compareOp: TxnCompareOp
+        :return: self
+        """
         if isinstance(compareOp, TxnCompareOp):
-            compareOp = compareOp.to_dict()
+            compareOp = compareOp.to_compare()
         self._compare.append(compareOp)
         return self
 
     If = compare
 
     def success(self, successOp):
+        """
+        Add a database operation to the transaction success component
+        """
         self._success.append(successOp)
         return self
 
     Then = success
 
     def failure(self, failureOp):
+        """
+        Add a database operation to the transaction failure component
+        """
         self._failure.append(failureOp)
         return self
 
@@ -64,6 +102,12 @@ class Txn(object):
 
     @staticmethod
     def key(key):
+        """
+        Get the TxnCompareOp of a key
+
+        :param key: str
+        :return: TxnCompareOp
+        """
         return TxnCompareOp(key)
 
     @staticmethod
@@ -85,7 +129,7 @@ class Txn(object):
         all=None,
     ):
         """
-        Range gets the keys in the range from the key-value store.
+        Operation of keys in the range from the key-value store.
 
         :type key: str
         :param key: key is the first key for the range. If range_end is not given, the request only looks up key.
@@ -156,7 +200,7 @@ class Txn(object):
     @staticmethod
     def put(key, value, lease=0, prev_kv=False, ignore_value=False, ignore_lease=False):
         """
-        Put puts the given key into the key-value store.
+        Operation of puts the given key into the key-value store.
         A put request increments the revision of the key-value store
         and generates one event in the event history.
 
@@ -183,7 +227,7 @@ class Txn(object):
     @staticmethod
     def delete(key=None, range_end=None, prev_kv=False, prefix=None, all=None):
         """
-        DeleteRange deletes the given range from the key-value store.
+        Operation of deletes the given range from the key-value store.
         A delete request increments the revision of the key-value store
         and generates a delete event in the event history for every deleted key.
 
@@ -207,7 +251,14 @@ class Txn(object):
 
 
 class TxnCompareOp(object):
+    """
+    The operator of transaction's compare part
+    """
+
     def __init__(self, key):
+        """
+        :param key: the key to compare
+        """
         if not isinstance(key, (six.string_types, bytes)):
             raise TypeError("parameter 'key' expects (str, bytes) got '%s'" % type(key))
         self._key = key
@@ -225,24 +276,36 @@ class TxnCompareOp(object):
 
     @property
     def value(self):
+        """
+        represents the value of the key
+        """
         self.__check_target()
         self._tmp_target = CompareCompareTarget.VALUE
         return self
 
     @property
     def mod(self):
+        """
+        represents the mod_revision of the key
+        """
         self.__check_target()
         self._tmp_target = CompareCompareTarget.MOD
         return self
 
     @property
     def version(self):
+        """
+        represents the version of the key
+        """
         self.__check_target()
         self._tmp_target = CompareCompareTarget.VERSION
         return self
 
     @property
     def create(self):
+        """
+        represents the create_revision of the key
+        """
         self.__check_target()
         self._tmp_target = CompareCompareTarget.CREATE
         return self
@@ -301,7 +364,10 @@ class TxnCompareOp(object):
     def __le__(self, other):
         raise NotImplementedError
 
-    def to_dict(self):
+    def to_compare(self):
+        """
+        return the compare payload that the rpc accepts
+        """
         data = {
             "result": _enum_value(self._result),
             "target": _enum_value(self._target),

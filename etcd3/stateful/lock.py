@@ -41,9 +41,8 @@ class Lock(object):  # TODO: maybe we could improve the performance by reduce so
         :param lock_name: the name of the lock
         :type lock_ttl: int
         :param lock_ttl: ttl of the lock, default is 60s
-        :type host_global: bool
-        :param host_global: if set True, the uuid of the lock will be stored in a temp file
-            thus all the process on the host will hold the same lock
+        :type reentrant: str
+        :param reentrant: the reentrant type of the lock can set to Lock.HOST, Lock.PROCESS, Lock.THREAD
         :type lock_prefix: str
         :param lock_prefix: the prefix of the lock key
         """
@@ -72,6 +71,8 @@ class Lock(object):  # TODO: maybe we could improve the performance by reduce so
             return '%s:thrd:%s' % (hostname, threading.get_ident())
         elif self.reentrant == self.HOST:
             return self._get_global_uuid('%s:host:%s' % (hostname, socket.gethostbyname(hostname)))
+        else:
+            raise TypeError("unknown reentrant type, expect one of Lock.HOST, Lock.PROCESS, Lock.THREAD")
 
     def _get_global_uuid(self, uuid):
         path = tempfile.gettempdir() + '/' + self.name + '_lock'
@@ -100,6 +101,11 @@ class Lock(object):  # TODO: maybe we could improve the performance by reduce so
         return self.__holders_lease
 
     def holders(self):
+        """
+        tell how many holders are holding the lock
+
+        :return: int
+        """
         if not self.reentrant:
             if self._get_locker():
                 return 1
@@ -118,6 +124,9 @@ class Lock(object):  # TODO: maybe we could improve the performance by reduce so
         return 0
 
     def incr_holder(self):
+        """
+        Atomic increase the holder count by 1
+        """
         n = self.holders()
         t = self.client.Txn()
         t.If(t.key(self.holders_key).value == b'%d' % n)
@@ -128,6 +137,9 @@ class Lock(object):  # TODO: maybe we could improve the performance by reduce so
         log.debug("failed to incr holders count")
 
     def decr_holder(self):
+        """
+        Atomic decrease the holder count by 1
+        """
         n = self.holders() or 0
         t = self.client.Txn()
         t.If(t.key(self.holders_key).value == b'%d' % n)
@@ -223,8 +235,18 @@ class Lock(object):  # TODO: maybe we could improve the performance by reduce so
         log.debug("Lock acquired (lock_key: %s, value: %s)" % (self.lock_key, self.uuid))
         return self
 
-    def refresh(self):
-        return self.acquire(block=False)
+    def wait(self, locker=None, timeout=None):
+        """
+        Wait until the lock is lock is able to acquire
+
+        :param locker: kv of the lock
+        :param timeout: wait timeout
+        """
+        locker = locker or self._get_locker()
+        if not locker:
+            return
+        self.watcher = watcher = self.client.Watcher(key=locker.key, max_retries=0)
+        return watcher.watch_once(lambda e: e.type == EventType.DELETE or e.value == self.uuid, timeout=timeout)
 
     def release(self):
         """
@@ -256,10 +278,3 @@ class Lock(object):  # TODO: maybe we could improve the performance by reduce so
     def __exit__(self, type, value, traceback):
         self.release()
         return False
-
-    def wait(self, locker=None, timeout=None):
-        locker = locker or self._get_locker()
-        if not locker:
-            return
-        self.watcher = watcher = self.client.Watcher(key=locker.key, max_retries=0)
-        return watcher.watch_once(lambda e: e.type == EventType.DELETE or e.value == self.uuid, timeout=timeout)
