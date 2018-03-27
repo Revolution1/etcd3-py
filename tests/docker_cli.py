@@ -82,7 +82,7 @@ def docker_run_etcd_ssl():  # pragma: no cover
     return docker(cmd), h, t
 
 
-def docker_rm_etcd_ssl(raise_error=False):
+def docker_rm_etcd_ssl(raise_error=False): # pragma: no cover
     cmd = 'rm -f etcd3_ssl'
     return docker(cmd, raise_error=raise_error)
 

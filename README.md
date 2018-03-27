@@ -49,7 +49,7 @@ $ pip install etcd3-py
 **Sync Client**
 ```python
 >>> from etcd3 import Client
->>> client = Client('127.0.0.1', 2379)
+>>> client = Client('127.0.0.1', 2379, cert=(CERT_PATH, KEY_PATH), verify=CA_PATH)
 >>> client.version()
 EtcdVersion(etcdserver='3.3.0-rc.4', etcdcluster='3.3.0')
 >>> client.put('foo', 'bar')
