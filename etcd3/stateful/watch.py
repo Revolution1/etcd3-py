@@ -17,10 +17,17 @@ EventType = EventEventType
 
 
 class OnceTimeout(IOError):
+    """
+    Timeout caused by watch once
+    """
     pass
 
 
 class KeyValue(object):  # pragma: no cover
+    """
+    Model of the key-value of the event
+    """
+
     def __init__(self, data):
         self._data = data
         self.key = data.get('key')
@@ -46,6 +53,10 @@ class KeyValue(object):  # pragma: no cover
 
 
 class Event(KeyValue):
+    """
+    Watch event
+    """
+
     def __init__(self, data):
         super(Event, self).__init__(data.kv._data)
         self.type = data.type or EventType.PUT  # default is PUT
@@ -106,7 +117,7 @@ class Watcher(object):
         self.max_retries = max_retries
         self.callbacks = []
         self.watching = False
-        self.timeout = None # only meaningful for watch_once
+        self.timeout = None  # only meaningful for watch_once
 
         self._thread = None
         self._resp = None
@@ -123,12 +134,24 @@ class Watcher(object):
         self.no_delete = no_delete
 
     def set_default_timeout(self, timeout):
+        """
+        Set the default timeout of watch request
+
+        :type timeout: int
+        :param timeout: timeout in seconds
+        """
         self.timeout = timeout
 
     def clear_revision(self):
+        """
+        Clear the start_revision that stored in watcher
+        """
         self.start_revision = None
 
     def request_create(self):
+        """
+        Start a watch request
+        """
         if self.revision is not None:  # continue last watch
             self.start_revision = self.revision + 1
         return self.client.watch_create(
@@ -139,9 +162,19 @@ class Watcher(object):
         )
 
     def request_cancel(self):  # pragma: no cover
+        """
+        Cancel the watcher [Not Implemented because of etcd3]
+        """
         pass
 
     def get_filter(self, filter):
+        """
+        Get the event filter function
+
+        :type filter: callable or regex string or EventType or None
+        :param filter: will generate a filter function from this param
+        :return: callable
+        """
         if callable(filter):
             filter_func = filter
         elif isinstance(filter, (six.string_types, bytes)):
@@ -164,6 +197,16 @@ class Watcher(object):
         return filter_func
 
     def onEvent(self, filter_or_cb, cb=None):
+        """
+        Add a callback to a event that matches the filter
+
+        If only one param is given, which is filter_or_cb, it will be treated as the callback.
+        If any event comes, it will be called.
+
+        :type filter_or_cb: callable or regex string or EventType
+        :param filter_or_cb: filter or callback function
+        :param cb: the callback function
+        """
         if cb:
             filter = filter_or_cb
         else:
@@ -174,13 +217,29 @@ class Watcher(object):
         self.callbacks.append((self.get_filter(filter), filter, cb))
 
     def clear_callbacks(self):
+        """
+        Remove all callbacks
+        """
         self.callbacks = []
 
     def dispatch_event(self, event):
+        """
+        Find the callbacks, if callback's filter fits this event, call the callback
+
+        :param event: Event
+        """
         log.debug("dispatching event '%s'" % event)
         for filter, _, cb in self.callbacks:
             if filter(event):
                 cb(event)
+
+    def _ensure_callbacks(self):
+        if not self.callbacks:
+            raise TypeError("haven't watch on any event yet, use onEvent to watch a event")
+
+    def _ensure_not_watching(self):
+        if self.watching == True:
+            raise RuntimeError("already watching")
 
     def _run(self):
         log.debug("start watching '%s'" % self.key)
@@ -199,33 +258,10 @@ class Watcher(object):
                         self.dispatch_event(Event(event))
         self.watching = False
 
-    def stop(self):
-        if self.watching == False:
-            log.debug("try to stop, but seems not watching")
-        log.debug("stopping watcher")
-        self.watching = False
-        if not self._resp or (self._resp and self._resp.raw.closed):
-            return
-        try:
-            s = socket.fromfd(self._resp.raw._fp.fileno(), socket.AF_INET, socket.SOCK_STREAM)
-            s.shutdown(socket.SHUT_RDWR)
-            s.close()
-        except Exception:
-            self._resp.connection.close()
-        if self._thread:
-            self._thread.join()
-
-    cancel = stop
-
-    def _ensure_callbacks(self):
-        if not self.callbacks:
-            raise TypeError("haven't watch on any event yet, use onEvent to watch a event")
-
-    def _ensure_not_watching(self):
-        if self.watching == True:
-            raise RuntimeError("already watching")
-
     def run(self):
+        """
+        Run the watcher and handel events by callbacks
+        """
         self._ensure_callbacks()
         self._ensure_not_watching()
         self.errors.clear()
@@ -254,7 +290,31 @@ class Watcher(object):
         finally:
             self.watching = False
 
+    def stop(self):
+        """
+        Stop watching, close the watch stream and exit the daemon thread
+        """
+        if self.watching == False:
+            log.debug("try to stop, but seems not watching")
+        log.debug("stopping watcher")
+        self.watching = False
+        if not self._resp or (self._resp and self._resp.raw.closed):
+            return
+        try:
+            s = socket.fromfd(self._resp.raw._fp.fileno(), socket.AF_INET, socket.SOCK_STREAM)
+            s.shutdown(socket.SHUT_RDWR)
+            s.close()
+        except Exception:
+            self._resp.connection.close()
+        if self._thread:
+            self._thread.join()
+
+    cancel = stop
+
     def runDaemon(self):
+        """
+        Run Watcher in a daemon thread
+        """
         self._ensure_callbacks()
         self._ensure_not_watching()
         t = self._thread = threading.Thread(target=self.run)
@@ -316,11 +376,11 @@ class Watcher(object):
                 # ConnectionError(MaxRetryError) means cannot reach the server
                 if 'Max retries exceeded with url' in str(e):
                     raise  # no need to retry
-                elif 'Read timed out.' in str(e) and self._once: # if timed out and doing watch_once
+                elif 'Read timed out.' in str(e) and self._once:  # if timed out and doing watch_once
                     raise OnceTimeout
                 # ChunkedEncodingError usually means we lost the connection, could cause by watcher.stop()
                 elif not self.watching:
-                    raise StopIteration # watch stopped by user
+                    raise StopIteration  # watch stopped by user
                 if retries < self.max_retries:  # connection unexpectedly or just reached the timeout
                     self.errors.append(e)
                     log.debug("failed watching (times:%d) retrying %s" % (retries, e))

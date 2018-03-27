@@ -1,6 +1,14 @@
 API Reference
 =============
 
+etcd3\.baseclient
+-----------------
+
+.. automodule:: etcd3.baseclient
+    :members:
+    :undoc-members:
+    :show-inheritance:
+
 etcd3\.client
 -------------
 
@@ -16,6 +24,14 @@ etcd3\.aio\_client
     :members:
     :undoc-members:
     :show-inheritance:
+
+etcd3\.stateful
+---------------
+
+.. toctree::
+    :maxdepth: 3
+
+    etcd3.stateful
 
 etcd3\.apis
 -----------

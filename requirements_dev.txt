@@ -15,3 +15,5 @@ pytest-runner>=2.11.1
 inflection>=0.3.1
 isort==4.3.4
 yapf>=0.20.0
+m2r==0.1.13
+codecov>=1.4.0

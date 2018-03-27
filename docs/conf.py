@@ -288,6 +288,7 @@ texinfo_documents = [
      'Miscellaneous'),
 ]
 
+
 # Documents to append as an appendix to all manuals.
 # texinfo_appendices = []
 
@@ -299,3 +300,15 @@ texinfo_documents = [
 
 # If true, do not generate a @detailmenu in the "Top" node's menu.
 # texinfo_no_detailmenu = False
+
+def skip(app, what, name, obj, skip, options):
+    if name in ["__init__", '__enter__', "__exit__", '__aenter__', "__aexit__"]:
+        return False
+    return skip
+
+
+def setup(app):
+    app.connect("autodoc-skip-member", skip)
+
+
+autodoc_member_order = 'bysource'
