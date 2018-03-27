@@ -1,7 +1,11 @@
+import time
+
 import pytest
 
 from etcd3.client import Client
 from etcd3.errors import Etcd3Exception
+from .docker_cli import CA_PATH, CERT_PATH, KEY_PATH, NO_DOCKER_SERVICE
+from .docker_cli import docker_run_etcd_ssl, docker_rm_etcd_ssl
 from .envs import protocol, host, port
 from .etcd_go_cli import etcdctl, NO_ETCD_SERVICE
 from .mocks import fake_request
@@ -91,3 +95,13 @@ def test_patched_request_exception(client, monkeypatch):
     monkeypatch.setattr(client._session, 'post', post)
     with pytest.raises(Etcd3Exception, match=r".*'Not Found'.*"):
         client.call_rpc('/v3alpha/kv/rag', {})  # non exist path
+
+
+@pytest.mark.skipif(NO_DOCKER_SERVICE, reason="no docker service available")
+def test_client_ssl():
+    docker_rm_etcd_ssl()
+    _, port, _ = docker_run_etcd_ssl()
+    time.sleep(2)
+    client = Client(host, port, cert=(CERT_PATH, KEY_PATH), verify=CA_PATH)
+    assert client.version()
+    docker_rm_etcd_ssl()

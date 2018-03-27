@@ -1,8 +1,10 @@
 import asyncio
+import time
 
 import pytest
 
 from etcd3 import AioClient
+from ..docker_cli import docker_rm_etcd_ssl, docker_run_etcd_ssl, CERT_PATH, KEY_PATH, CA_PATH, NO_DOCKER_SERVICE
 from ..envs import protocol, host, port
 from ..etcd_go_cli import NO_ETCD_SERVICE
 from ..etcd_go_cli import etcdctl
@@ -67,3 +69,14 @@ async def test_async_stream(aio_client):
                 assert i.events[0].kv.key == b'test_key'
                 assert i.events[0].kv.value == b'test_value'
                 times -= 1
+
+
+@pytest.mark.skipif(NO_DOCKER_SERVICE, reason="no docker service available")
+@pytest.mark.asyncio
+async def test_aio_client_ssl():
+    docker_rm_etcd_ssl()
+    _, port, _ = docker_run_etcd_ssl()
+    time.sleep(2)
+    aio_client = AioClient(host, port, cert=(CERT_PATH, KEY_PATH), verify=CA_PATH)
+    assert await aio_client.call_rpc('/v3alpha/kv/range', {'key': 'test_key'})
+    docker_rm_etcd_ssl()

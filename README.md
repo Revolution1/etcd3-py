@@ -24,7 +24,7 @@ Notice: The authentication header through gRPC-JSON-Gateway only supported in [e
 * [x] Support etcd3 gRPC-JSON-Gateway including stream
 * [x] Response modelizing based on etcd3's swagger spec
 * [x] Generate code from swagger spec
-* [ ] TLS Connection
+* [x] TLS Connection
 * [x] support APIs
     * [x] Auth
     * [x] KV

@@ -22,9 +22,9 @@ env:
 
 before_install:
   - docker pull quay.io/coreos/etcd:$ETCD_VER
-  - docker run -d -p 2379:2379 -p 2380:2380 --name etcd3 quay.io/coreos/etcd:$ETCD_VER etcd --name node1 --initial-advertise-peer-urls http://0.0.0.0:2380 --listen-peer-urls http://0.0.0.0:2380 --advertise-client-urls http://0.0.0.0:2379 --listen-client-urls http://0.0.0.0:2379 --initial-cluster node1=http://0.0.0.0:2380
+  - docker run -d -p 2379:2379 -p 2380:2380 --name etcd3_1 quay.io/coreos/etcd:$ETCD_VER etcd --name node1 --initial-advertise-peer-urls http://0.0.0.0:2380 --listen-peer-urls http://0.0.0.0:2380 --advertise-client-urls http://0.0.0.0:2379 --listen-client-urls http://0.0.0.0:2379 --initial-cluster node1=http://0.0.0.0:2380
   - docker ps
-  - sudo docker cp etcd3:/usr/local/bin/etcdctl /usr/bin/etcdctl
+  - sudo docker cp etcd3_1:/usr/local/bin/etcdctl /usr/bin/etcdctl
   - which etcdctl
 
 # command to install dependencies, e.g. pip install -r requirements.txt --use-mirrors

@@ -4,8 +4,10 @@ asynchronous client
 
 import json
 import ssl
+import warnings
 
 import aiohttp
+import six
 from aiohttp.client import _RequestContextManager
 
 from .baseclient import BaseClient
@@ -13,7 +15,7 @@ from .baseclient import BaseModelizedStreamResponse
 from .errors import Etcd3Exception
 from .errors import Etcd3StreamError
 from .errors import get_client_error
-from .utils import iter_json_string
+from .utils import iter_json_string, Etcd3Warning
 
 
 class ModelizedResponse(object):
@@ -126,19 +128,39 @@ class ResponseIter():
 
 class AioClient(BaseClient):
     def __init__(self, host='localhost', port=2379, protocol='http',
-                 ca_cert=None, cert_key=None, cert_cert=None,
+                 cert=(), verify=None,
                  timeout=None, headers=None, user_agent=None, pool_size=30,
                  username=None, password=None, token=None):
         super(AioClient, self).__init__(host=host, port=port, protocol=protocol,
-                                        ca_cert=ca_cert, cert_key=cert_key, cert_cert=cert_cert,
+                                        cert=cert, verify=verify,
                                         timeout=timeout, headers=headers, user_agent=user_agent, pool_size=pool_size,
                                         username=username, password=password, token=token)
+        self.ssl_context = None
         if self.cert:
-            ssl_context = ssl.SSLContext()
+            if verify is False:
+                cert_reqs = ssl.CERT_NONE
+                cafile = None
+            elif verify is True:
+                cert_reqs = ssl.CERT_REQUIRED
+                import certifi
+                cafile = certifi.where()
+            elif isinstance(verify, six.string_types):
+                cert_reqs = ssl.CERT_REQUIRED
+                cafile = verify
+            else:
+                raise TypeError("verify must be bool or string of the ca file path")
+            # the ssl problem is a pain in the ass, seems i can never get it right
+            # https://github.com/requests/requests/issues/1847
+            # https://stackoverflow.com/questions/44316292/ssl-sslerror-tlsv1-alert-protocol-version
+            self.ssl_context = ssl_context = ssl.SSLContext()
+            ssl_context.protocol = ssl.PROTOCOL_TLS
+            if not hasattr(ssl, 'PROTOCOL_TLSv1_1'):
+                warnings.warn(Etcd3Warning("the openssl version of your python is too old to support TLSv1.1+,"
+                                           "please upgrade you python"))
+            ssl_context.verify_mode = cert_reqs
+            ssl_context.load_verify_locations(cafile=cafile)
             ssl_context.load_cert_chain(*self.cert)
-            connector = aiohttp.TCPConnector(limit=pool_size, ssl=ssl_context)
-        else:
-            connector = aiohttp.TCPConnector(limit=pool_size)
+        connector = aiohttp.TCPConnector(limit=pool_size, ssl=self.ssl_context)
         self.session = aiohttp.ClientSession(connector=connector)
 
     async def close(self):
