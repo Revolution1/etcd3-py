@@ -24,7 +24,7 @@ Notice: The authentication header through gRPC-JSON-Gateway only supported in [e
 * [x] Support etcd3 gRPC-JSON-Gateway including stream
 * [x] Response modelizing based on etcd3's swagger spec
 * [x] Generate code from swagger spec
-* [ ] TLS Connection
+* [x] TLS Connection
 * [x] support APIs
     * [x] Auth
     * [x] KV
@@ -49,7 +49,7 @@ $ pip install etcd3-py
 **Sync Client**
 ```python
 >>> from etcd3 import Client
->>> client = Client('127.0.0.1', 2379)
+>>> client = Client('127.0.0.1', 2379, cert=(CERT_PATH, KEY_PATH), verify=CA_PATH)
 >>> client.version()
 EtcdVersion(etcdserver='3.3.0-rc.4', etcdcluster='3.3.0')
 >>> client.put('foo', 'bar')

@@ -26,7 +26,7 @@ from .version import __version__
 
 rpc_swagger_json = os.path.join(os.path.dirname(__file__), 'rpc.swagger.json')
 
-swaggerSpec = SwaggerSpec(rpc_swagger_json) # TODO: swagger json may changed and need to implement multiple version
+swaggerSpec = SwaggerSpec(rpc_swagger_json)  # TODO: swagger json may changed and need to implement multiple version
 
 
 class BaseModelizedStreamResponse(object):  # pragma: no cover
@@ -48,25 +48,20 @@ class BaseModelizedStreamResponse(object):  # pragma: no cover
 
 class BaseClient(AuthAPI, ClusterAPI, KVAPI, LeaseAPI, MaintenanceAPI, WatchAPI, ExtraAPI):
     def __init__(self, host='localhost', port=2379, protocol='http',
-                 ca_cert=None, cert_key=None, cert_cert=None,
+                 cert=(), verify=None,
                  timeout=None, headers=None, user_agent=None, pool_size=30,
                  username=None, password=None, token=None):
         self.host = host
         self.port = port
         self.cert = None
-        self.ca_cert = ca_cert
-        self.cert_key = cert_key
-        self.cert_cert = cert_cert
-        if ca_cert or cert_key and cert_cert:
+        self.cert = cert
+        self.protocol = protocol
+        if cert:
             self.protocol = 'https'
-        if ca_cert:
-            self.cert = ca_cert
-        if cert_cert and cert_key:
-            self.cert = (cert_cert, cert_key)
+        self.verify = verify or False
         self.user_agent = user_agent
         if not user_agent:
             self.user_agent = 'etcd3-py/' + __version__
-        self.protocol = protocol
         self.timeout = timeout
         self.headers = headers or {}
         self.username = username
@@ -82,7 +77,7 @@ class BaseClient(AuthAPI, ClusterAPI, KVAPI, LeaseAPI, MaintenanceAPI, WatchAPI,
         try:
             import requests
 
-            r = requests.get(self._url('/version'), timeout=0.3)  # 300ms will do
+            r = requests.get(self._url('/version'), cert=self.cert, verify=self.verify, timeout=0.3)  # 300ms will do
             r.raise_for_status()
             v = r.json()
             self.cluster_version = v["etcdcluster"]

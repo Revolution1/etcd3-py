@@ -80,14 +80,16 @@ def iter_response(resp):
 
 class Client(BaseClient):
     def __init__(self, host='localhost', port=2379, protocol='http',
-                 ca_cert=None, cert_key=None, cert_cert=None,
+                 cert=(), verify=None,
                  timeout=None, headers=None, user_agent=None, pool_size=30,
                  username=None, password=None, token=None):
         super(Client, self).__init__(host=host, port=port, protocol=protocol,
-                                     ca_cert=ca_cert, cert_key=cert_key, cert_cert=cert_cert,
+                                     cert=cert, verify=verify,
                                      timeout=timeout, headers=headers, user_agent=user_agent, pool_size=pool_size,
                                      username=username, password=password, token=token)
         self._session = requests.session()
+        self._session.cert = self.cert
+        self._session.verify = self.verify
         self.__set_conn_pool(pool_size)
 
     def __set_conn_pool(self, pool_size):
@@ -170,7 +172,6 @@ class Client(BaseClient):
         """
         data = data or {}
         kwargs.setdefault('timeout', self.timeout)
-        kwargs.setdefault('cert', self.cert)
         if self.token:
             kwargs.setdefault('headers', {}).setdefault('authorization', self.token)
         kwargs.setdefault('headers', {}).setdefault('user_agent', self.user_agent)

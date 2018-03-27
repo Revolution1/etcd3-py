@@ -1,0 +1,14 @@
+{
+  "CN": "etcd3-py-test",
+  "key": {
+    "algo": "ecdsa",
+    "size": 256
+  },
+  "names": [
+    {
+      "C": "US",
+      "ST": "CA",
+      "L": "San Francisco"
+    }
+  ]
+}
