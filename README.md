@@ -2,6 +2,7 @@
 
 [![pypi](https://img.shields.io/pypi/v/etcd3-py.svg)](https://pypi.python.org/pypi/etcd3-py)
 [![travis](https://travis-ci.org/Revolution1/etcd3-py.svg?branch=master)](https://travis-ci.org/Revolution1/etcd3-py)
+[![Codacy Badge](https://api.codacy.com/project/badge/Grade/9448814cd66b4a568365bc050d88270c)](https://www.codacy.com/app/revol/etcd3-py?utm_source=github.com&amp;utm_medium=referral&amp;utm_content=Revolution1/etcd3-py&amp;utm_campaign=Badge_Grade)
 [![codecov](https://codecov.io/gh/Revolution1/etcd3-py/branch/master/graph/badge.svg)](https://codecov.io/gh/Revolution1/etcd3-py)
 [![doc](https://readthedocs.org/projects/etcd3-py/badge/?version=latest)](http://etcd3-py.readthedocs.io/en/latest/?badge=latest)
 [![updates](https://pyup.io/repos/github/Revolution1/etcd3-py/shield.svg)](https://pyup.io/repos/github/Revolution1/etcd3-py/)

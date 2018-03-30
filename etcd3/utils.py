@@ -373,5 +373,3 @@ def find_executable(executable, path=None):  # pragma: no cover
             f = os.path.join(p, execname)
             if os.path.isfile(f):
                 return f
-    else:
-        return None
