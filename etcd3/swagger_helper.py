@@ -318,125 +318,14 @@ class SwaggerNode(object):
             self.description = node.get('description', None)
             self.title = node.get('title', None)
             self.required = node.get('required', False)
-            if self.type == 'object':
-                def encode(data):
-                    """
-                    :param data: dict
-                    """
-                    if data is None:
-                        return
-                    if 'properties' not in node:
-                        return {}
-                    rt = {}
-                    for k, v in self.properties._items():
-                        value = self.properties._get(k).encode(data.get(k))
-                        if value is None:
-                            continue
-                        rt[k] = value
-                    return rt
-
-                def decode(data):
-                    """
-                    :param data: dict
-                    """
-                    if 'properties' not in node:
-                        return {}
-                    rt = {}
-                    for k, v in six.iteritems(data):
-                        if k not in self.properties:
-                            continue
-                        rt[k] = self.properties._get(k).decode(v)
-                    return rt
-
-                def getModel():
-                    def init(this, data):
-                        if not isinstance(data, dict):
-                            raise TypeError("A dict expected, got a '%s' instead" % type(data))
-                        this._node = self
-                        this._data = data
-                        for k in self.properties._keys():
-                            if k not in data:
-                                setattr(this, k, None)
-                                continue
-                            v = data[k]
-                            m = self.properties._get(k)
-                            if m._is_schema:
-                                m = m.getModel()
-                                v = m(v)
-                            setattr(this, k, v)
-
-                    name = self._path[-1]
-                    ite = lambda self: self._data.__iter__()
-                    con = lambda self, key: self._data.__contains__(key)
-                    rep = lambda self: '%s(%s)' % (name, ', '.join(
-                        ['%s=%s' % (k, repr(v)) for k, v in six.iteritems(self.__dict__) if k in self._data]))
-
-                    return type(str(name), (), {
-                        '__init__': init,
-                        '__repr__': rep,
-                        '__iter__': ite,
-                        '__contains__': con
-                    })
-
-            elif self.type == 'array':
-
-                def encode(data):
-                    """
-                    :param data: iterable
-                    """
-                    if data is None:
-                        return
-                    return [self.items.encode(i) for i in data]
-
-                def decode(data):
-                    """
-                    :param data: iterable
-                    """
-                    if data is None:
-                        return
-                    return [self.items.decode(i) for i in data]
-
-                def getModel():
-                    def init(data):
-                        if not isinstance(data, (list, tuple)):
-                            raise TypeError("A list or tuple expected, got a '%s' instead" % type(data))
-                        m = self.items.getModel()
-                        return [m(i) for i in data]
-
-                    return init
-            elif self.type in PROP_DECODERS:
-                def encode(data):
-                    if isinstance(data, enum.Enum):
-                        data = data.value
-                    rt = PROP_ENCODERS[self.type](PROP_ENCODERS[self.format](data))
-                    if self.default and rt is None:
-                        rt = copy.copy(self.default)
-                    if isinstance(rt, six.binary_type):
-                        rt = six.text_type(rt, encoding='utf-8')
-                    return rt
-
-                def decode(data):
-                    r = PROP_DECODERS[self.format](PROP_DECODERS[self.type](data))
-                    if self._is_enum:
-                        m = name_to_model.get(self._path[-1])
-                        if m:
-                            r = m(r)
-                    return r
-
-                def getModel():
-                    return lambda x: x
-                    # return lambda x: x.value if isinstance(x, enum.Enum) else x
-
+            if self.type in PROP_DECODERS:
                 self.format = node.get('format', None)
                 self.default = node.get('default', None)
                 if 'enum' in node:
                     self._is_enum = True
-                    self.enum = enum.Enum(self._path[-1], [(six.text_type(i), i) for i in node.get('enum')])
-            else:
+                    self.enum = name_to_model.get(self._path[-1])
+            elif self.type not in ('object', 'array'):
                 raise TypeError('Unsupported Type %s' % self.type)
-            self.encode = encode
-            self.decode = decode
-            self.getModel = getModel
 
     def encode(self, data):
         """
@@ -445,7 +334,33 @@ class SwaggerNode(object):
         :param data: data to encode
         :return: encoded data
         """
-        raise NotImplementedError
+        if not hasattr(self, 'type') and self.type:
+            raise NotImplementedError
+        if self.type == 'object':
+            if data is None:
+                return
+            if 'properties' not in self._node:
+                return {}
+            rt = {}
+            for k, v in self.properties._items():
+                value = self.properties._get(k).encode(data.get(k))
+                if value is None:
+                    continue
+                rt[k] = value
+            return rt
+        elif self.type == 'array':
+            if data is None:
+                return []
+            return [self.items.encode(i) for i in data]
+        else:
+            if isinstance(data, enum.Enum):
+                data = data.value
+            rt = PROP_ENCODERS[self.type](PROP_ENCODERS[self.format](data))
+            if self.default and rt is None:
+                rt = copy.copy(self.default)
+            if isinstance(rt, six.binary_type):
+                rt = six.text_type(rt, encoding='utf-8')
+            return rt
 
     def decode(self, data):
         """
@@ -454,13 +369,74 @@ class SwaggerNode(object):
         :param data: data to decode
         :return: decoded data
         """
-        raise NotImplementedError
+        if not hasattr(self, 'type') and self.type:
+            raise NotImplementedError
+        if self.type == 'object':
+            if 'properties' not in self._node:
+                return {}
+            rt = {}
+            for k, v in six.iteritems(data):
+                if k not in self.properties:
+                    continue
+                rt[k] = self.properties._get(k).decode(v)
+            return rt
+        elif self.type == 'array':
+            if data is None:
+                return
+            return [self.items.decode(i) for i in data]
+        else:
+            r = PROP_DECODERS[self.format](PROP_DECODERS[self.type](data))
+            if self._is_enum:
+                m = name_to_model.get(self._path[-1])
+                if m:
+                    r = m(r)
+            return r
 
     def getModel(self):
         """
         get the model of the schema
         """
-        raise NotImplementedError
+        if not hasattr(self, 'type') and self.type:
+            raise NotImplementedError
+        if self.type == 'object':
+            def init(this, data):
+                if not isinstance(data, dict):
+                    raise TypeError("A dict expected, got a '%s' instead" % type(data))
+                this._node = self
+                this._data = data
+                for k in self.properties._keys():
+                    if k not in data:
+                        setattr(this, k, None)
+                        continue
+                    v = data[k]
+                    m = self.properties._get(k)
+                    if m._is_schema:
+                        m = m.getModel()
+                        v = m(v)
+                    setattr(this, k, v)
+
+            name = self._path[-1]
+            ite = lambda self: self._data.__iter__()
+            con = lambda self, key: self._data.__contains__(key)
+            rep = lambda self: '%s(%s)' % (name, ', '.join(
+                ['%s=%s' % (k, repr(v)) for k, v in six.iteritems(self.__dict__) if k in self._data]))
+
+            return type(str(name), (), {
+                '__init__': init,
+                '__repr__': rep,
+                '__iter__': ite,
+                '__contains__': con
+            })
+        elif self.type == 'array':
+            def init(data):
+                if not isinstance(data, (list, tuple)):
+                    raise TypeError("A list or tuple expected, got a '%s' instead" % type(data))
+                m = self.items.getModel()
+                return [m(i) for i in data]
+
+            return init
+        else:
+            return lambda x: x
 
     @property
     def _ref(self):

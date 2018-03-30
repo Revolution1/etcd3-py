@@ -115,7 +115,7 @@ class Lease(object):
 
         def keepalived():
             while self.keeping:
-                retry(lambda: self.keepalive_once(), max_tries=3, log=log)
+                retry(self.keepalive_once, max_tries=3, log=log)
                 self.last_keep = time.time()
                 log.debug("keeping lease %d" % self.ID)
                 if keep_cb:
@@ -123,7 +123,7 @@ class Lease(object):
                         keep_cb()
                     except Exception:
                         log.exception("stream_cb() raised an error")
-                for i in range(int(self.grantedTTL / 2.0)):  # keep per grantedTTL/4 seconds
+                for _ in range(int(self.grantedTTL / 2.0)):  # keep per grantedTTL/4 seconds
                     if self.keeping:
                         break
                     time.sleep(0.5)

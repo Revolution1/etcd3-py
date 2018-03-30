@@ -39,11 +39,11 @@ class BaseModelizedStreamResponse(object):  # pragma: no cover
         """
         close the stream
         """
-        raise NotImplemented
+        raise NotImplementedError
 
     @abc.abstractmethod
     def __iter__(self):
-        raise NotImplemented
+        raise NotImplementedError
 
 
 class BaseClient(AuthAPI, ClusterAPI, KVAPI, LeaseAPI, MaintenanceAPI, WatchAPI, ExtraAPI):

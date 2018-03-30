@@ -2,3 +2,6 @@ exclude_paths:
   - tests/**
   - scripts/**
   - docs/**
+  - travis_pypi_setup.py
+  - setup.py
+  - etcd3/utils.py
