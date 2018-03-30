@@ -1,5 +1,7 @@
 from collections import namedtuple
 
+import six
+
 from .base import BaseAPI
 
 EtcdVersion = namedtuple('EtcdVersion', ['etcdserver', 'etcdcluster'])
@@ -34,7 +36,10 @@ class ExtraAPI(BaseAPI):
         """
         resp = self._get(self._url('/metrics'))
         self._raise_for_status(resp)
-        return resp.content
+        metrics = resp.content
+        if not isinstance(metrics, six.text_type):
+            metrics = six.text_type(metrics, encoding='utf-8')
+        return metrics
 
     def metrics(self):  # pragma: no cover
         """
