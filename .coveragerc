@@ -29,6 +29,7 @@ omit =
     etcd3/errors/
     tests/
     etcd3/utils.py
+    etcd3/contrib/
 
 [html]
 directory = coverage_html_report
