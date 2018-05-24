@@ -3,7 +3,7 @@ import time
 import json
 import os
 import shlex
-import subprocess
+import six
 
 from etcd3.utils import find_executable, exec_cmd
 from .envs import ETCD_IMG
@@ -46,6 +46,8 @@ def docker_run_etcd_main():  # pragma: no cover
     name = 'etcd3_1'
     try:
         out = docker('inspect %s' % name)
+        if isinstance(out, six.binary_type):
+            out = six.text_type(out, encoding='utf-8')
         spec = json.loads(out)
         if isinstance(spec, list):
             spec = spec[0]
