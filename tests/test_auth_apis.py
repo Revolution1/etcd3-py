@@ -7,7 +7,8 @@ from etcd3.errors import ErrRootUserNotExist
 from etcd3.errors import ErrUserNotFound
 from etcd3.models import authpbPermissionType
 from etcd3.utils import incr_last_byte
-from .envs import protocol, host, port
+from tests.docker_cli import docker_run_etcd_main
+from .envs import protocol, host
 from .etcd_go_cli import etcdctl, NO_ETCD_SERVICE
 
 
@@ -16,21 +17,22 @@ def client():
     """
     init Etcd3Client, close its connection-pool when teardown
     """
-    c = Client(host, port, protocol)
+    _, p, _ = docker_run_etcd_main()
+    c = Client(host, p, protocol)
     yield c
     c.close()
 
 
-def teardown_auth():  # pragma: no cover
+def teardown_auth(client):  # pragma: no cover
     """
     disable auth, delete all users and roles
     """
-    etcdctl('--user root:root auth disable', raise_error=False)
-    etcdctl('--user root:changed auth disable', raise_error=False)
-    for i in (etcdctl('role list', raise_error=False) or '').splitlines():
-        etcdctl('role', 'delete', i)
-    for i in (etcdctl('user list', raise_error=False) or '').splitlines():
-        etcdctl('user', 'delete', i)
+    etcdctl('--user root:root auth disable', raise_error=False, endpoint=client.baseurl)
+    etcdctl('--user root:changed auth disable', raise_error=False, endpoint=client.baseurl)
+    for i in (etcdctl('role list', raise_error=False, endpoint=client.baseurl) or '').splitlines():
+        etcdctl('role', 'delete', i, endpoint=client.baseurl)
+    for i in (etcdctl('user list', raise_error=False, endpoint=client.baseurl) or '').splitlines():
+        etcdctl('user', 'delete', i, endpoint=client.baseurl)
 
 
 def enable_auth():  # pragma: no cover
@@ -42,8 +44,8 @@ def enable_auth():  # pragma: no cover
 
 @pytest.mark.skipif(NO_ETCD_SERVICE, reason="no etcd service available")
 def test_auth_flow(client, request):
-    teardown_auth()
-    request.addfinalizer(teardown_auth)
+    teardown_auth(client)
+    request.addfinalizer(lambda:teardown_auth(client))
 
     # test error
     with pytest.raises(ErrRootUserNotExist):

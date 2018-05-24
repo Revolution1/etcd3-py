@@ -13,7 +13,7 @@ Python client for etcd v3 (Using gRPC-JSON-Gateway)
 * Free software: Apache Software License 2.0
 * Source Code: https://github.com/Revolution1/etcd3-py
 * Documentation: https://etcd3-py.readthedocs.io.
-* etcd version required: v3.3.0+
+* etcd version required: v3.2.2+
 
 Notice: The authentication header through gRPC-JSON-Gateway only supported in [etcd v3.3.0+](https://github.com/coreos/etcd/pull/7999)
 

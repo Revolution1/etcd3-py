@@ -70,6 +70,7 @@ def iter_response(resp):
     # https://github.com/coreos/etcd/blob/master/etcdserver/api/v3rpc/maintenance.go#L98
     # 2**15 < ceil(32*1024/3*4) < 2**16 = 65536
     for chunk in resp.iter_content(chunk_size=65536):
+        chunk = chunk.strip()
         chunk = left_chunk + chunk
         for ok, s, _ in iter_json_string(chunk, resp=resp, err_cls=Etcd3StreamError):
             if ok:

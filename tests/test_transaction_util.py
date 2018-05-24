@@ -1,7 +1,8 @@
 import pytest
 
 from etcd3 import Client
-from .envs import protocol, host, port
+from tests.docker_cli import docker_run_etcd_main
+from .envs import protocol, host
 from .etcd_go_cli import etcdctl, NO_ETCD_SERVICE
 
 
@@ -10,11 +11,13 @@ def client():
     """
     init Etcd3Client, close its connection-pool when teardown
     """
-    c = Client(host, port, protocol)
+    _, p, _ = docker_run_etcd_main()
+    c = Client(host, p, protocol)
     yield c
     c.close()
 
 
+@pytest.mark.timeout(60)
 @pytest.mark.skipif(NO_ETCD_SERVICE, reason="no etcd service available")
 def test_transaction(client):
     etcdctl('put foo bar')
