@@ -15,5 +15,5 @@ class BaseAPI(object):  # pragma: no cover
     def _post(self, url, data=None, json=None, **kwargs):
         raise NotImplementedError
 
-    def call_rpc(self, method, data=None, stream=False, **kwargs):
+    def call_rpc(self, method, data=None, stream=False, encode=True, raw=False, **kwargs):
         raise NotImplementedError
