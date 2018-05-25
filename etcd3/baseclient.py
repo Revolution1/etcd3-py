@@ -68,6 +68,7 @@ class BaseClient(AuthAPI, ClusterAPI, KVAPI, LeaseAPI, MaintenanceAPI, WatchAPI,
         self.password = password
         self.token = token
         self.cluster_version = None
+        self.server_version = None
         # TODO: /v3alpha will be deprecated an replaced by /v3 in v3.4
         # TODO: /v3beta will be deprecated in v3.5
         self.api_prefix = '/v3alpha'
@@ -81,15 +82,19 @@ class BaseClient(AuthAPI, ClusterAPI, KVAPI, LeaseAPI, MaintenanceAPI, WatchAPI,
             r.raise_for_status()
             v = r.json()
             self.cluster_version = v["etcdcluster"]
-            if sem.Version(self.cluster_version) < sem.Version('3.3.0'):
-                warnings.warn(Etcd3Warning("detected etcd cluster version(%s) is lower than 3.3.0, "
-                                           "the gRPC-JSON-Gateway may not work" % self.cluster_version))
+            self.server_version = v["etcdserver"]
+            if sem.Version(self.server_version) < sem.Version('3.2.2'):
+                warnings.warn(Etcd3Warning("detected etcd server version(%s) is lower than 3.2.2, "
+                                           "the gRPC-JSON-Gateway may not work" % self.server_version))
+            if sem.Version(self.server_version) < sem.Version('3.3.0'):
+                warnings.warn(Etcd3Warning("detected etcd server version(%s) is lower than 3.3.0, "
+                                           "authentication methods may not work" % self.server_version))
             else:
                 self.api_prefix = '/v3'
         except Exception:
             warnings.warn(Etcd3Warning("cannot detect etcd server version\n"
                                        "1. maybe is a network problem, please check your network connection\n"
-                                       "2. maybe your etcd server version is too low, required: 3.3.0+"))
+                                       "2. maybe your etcd server version is too low, required: 3.2.2+"))
 
     @property
     def baseurl(self):
