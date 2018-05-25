@@ -52,7 +52,7 @@ def docker_run_etcd_main():  # pragma: no cover
         if isinstance(spec, list):
             spec = spec[0]
         image = spec.get('Config', {}).get('Image')
-        if image != ETCD_IMG:
+        if image != ETCD_IMG or not spec.get('State', {}).get('Running'):
             if spec.get('Config', {}).get('Labels', {}).get('etcd3.py.test') == 'main':
                 print(docker('rm -f %s' % name))
             raise RuntimeError
