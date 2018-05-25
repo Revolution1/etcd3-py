@@ -148,6 +148,7 @@ def test_reentrant_lock_host(client):
     assert l2.holders() == 0
 
 
+@pytest.mark.timeout(60)
 @pytest.mark.skipif(NO_ETCD_SERVICE, reason="no etcd service available")
 def test_reentrant_lock(client):
     clear()

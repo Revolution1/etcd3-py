@@ -4,9 +4,9 @@ import pytest
 
 from etcd3.client import Client
 from etcd3.errors import Etcd3Exception
-from .docker_cli import CA_PATH, CERT_PATH, KEY_PATH, NO_DOCKER_SERVICE
+from .docker_cli import CA_PATH, CERT_PATH, KEY_PATH, NO_DOCKER_SERVICE, docker_run_etcd_main
 from .docker_cli import docker_run_etcd_ssl, docker_rm_etcd_ssl
-from .envs import protocol, host, port
+from .envs import protocol, host
 from .etcd_go_cli import etcdctl, NO_ETCD_SERVICE
 from .mocks import fake_request
 
@@ -16,7 +16,8 @@ def client():
     """
     init Etcd3Client, close its connection-pool when teardown
     """
-    c = Client(host, port, protocol)
+    _, p, _ = docker_run_etcd_main()
+    c = Client(host, p, protocol)
     yield c
     c.close()
 

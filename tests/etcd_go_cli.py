@@ -1,6 +1,7 @@
 import shlex
 
 from etcd3.utils import exec_cmd, find_executable
+from tests.docker_cli import NO_DOCKER_SERVICE
 from .envs import ETCD_ENDPOINT
 
 ETCDCTL_PATH = find_executable('etcdctl')
@@ -25,6 +26,8 @@ def etcdctl(*args, **kwargs):  # pragma: no cover
 
 
 NO_ETCD_SERVICE = True
+if not NO_DOCKER_SERVICE:
+    NO_ETCD_SERVICE = False
 try:  # pragma: no cover
     if ETCDCTL_PATH and etcdctl('--dial-timeout=0.2s endpoint health'):
         NO_ETCD_SERVICE = False

@@ -1,10 +1,11 @@
-import socket
 import time
 
 import pytest
+import socket
 
 from etcd3 import Client, EventType
-from .envs import protocol, host, port
+from tests.docker_cli import docker_run_etcd_main
+from .envs import protocol, host
 from .etcd_go_cli import etcdctl, NO_ETCD_SERVICE
 
 
@@ -13,11 +14,13 @@ def client():
     """
     init Etcd3Client, close its connection-pool when teardown
     """
-    c = Client(host, port, protocol)
+    _, p, _ = docker_run_etcd_main()
+    c = Client(host, p, protocol)
     yield c
     c.close()
 
 
+@pytest.mark.timeout(60)
 @pytest.mark.skipif(NO_ETCD_SERVICE, reason="no etcd service available")
 def test_watcher(client):
     max_retries = 3
@@ -96,11 +99,11 @@ def test_watcher(client):
     assert not w.watching
     assert w._resp.raw.closed
 
-    with pytest.raises(TypeError): # ensure callbacks
+    with pytest.raises(TypeError):  # ensure callbacks
         w.runDaemon()
 
     # test retry
-    w.onEvent(lambda e:None)
+    w.onEvent(lambda e: None)
     w.runDaemon()
     times = max_retries + 1
     while times:

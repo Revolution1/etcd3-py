@@ -4,6 +4,7 @@ import time
 import pytest
 
 from etcd3.client import Client
+from tests.docker_cli import docker_run_etcd_main
 from .envs import protocol, host, port
 from .etcd_go_cli import NO_ETCD_SERVICE, etcdctl
 
@@ -13,7 +14,8 @@ def client():
     """
     init Etcd3Client, close its connection-pool when teardown
     """
-    c = Client(host, port, protocol)
+    _, p, _ = docker_run_etcd_main()
+    c = Client(host, p, protocol)
     yield c
     c.close()
 

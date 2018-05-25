@@ -1,10 +1,12 @@
-import enum
-import functools
 import itertools
-import logging
-import os
 import sys
 import time
+
+import enum
+import functools
+import logging
+import os
+import shlex
 import warnings
 from collections import namedtuple, OrderedDict, Hashable
 from subprocess import Popen, PIPE
@@ -320,7 +322,13 @@ def retry(func, max_tries=3, log=logging, err_cls=Exception):  # pragma: no cove
 
 
 def exec_cmd(cmd, envs=None, raise_error=True):  # pragma: no cover
+    if isinstance(cmd, str):
+        cmd = shlex.split(cmd)
     envs = envs or {}
+    cmd = cmd[:]
+    exe = find_executable(cmd[0])
+    if exe:
+        cmd[0] = exe
     p = Popen(cmd, stdout=PIPE, stderr=PIPE, env=envs)
     out, err = p.communicate()
     if p.returncode != 0 and raise_error:
