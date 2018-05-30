@@ -1,3 +1,3 @@
 __author__ = 'Renjie Cai'
 __email__ = 'revol.cai@gmail.com'
-__version__ = '0.1.3'
+__version__ = '0.1.4'
