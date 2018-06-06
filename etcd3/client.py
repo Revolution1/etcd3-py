@@ -85,7 +85,16 @@ class Client(BaseClient):
     def __init__(self, host='localhost', port=2379, protocol='http',
                  cert=(), verify=None,
                  timeout=None, headers=None, user_agent=None, pool_size=30,
-                 username=None, password=None, token=None):
+                 username=None, password=None, token=None, max_retries=0):
+        """
+        :param max_retries: The maximum number of retries each connection
+            should attempt. Note, this applies only to failed DNS lookups, socket
+            connections and connection timeouts, never to requests where data has
+            made it to the server. By default, Requests does not retry failed
+            connections. If you need granular control over the conditions under
+            which we retry a request, import urllib3's ``Retry`` class and pass
+            that instead.
+        """
         super(Client, self).__init__(host=host, port=port, protocol=protocol,
                                      cert=cert, verify=verify,
                                      timeout=timeout, headers=headers, user_agent=user_agent, pool_size=pool_size,
@@ -93,11 +102,13 @@ class Client(BaseClient):
         self._session = requests.session()
         self._session.cert = self.cert
         self._session.verify = self.verify
-        self.__set_conn_pool(pool_size)
+        self.__set_conn_pool(pool_size, max_retries)
 
-    def __set_conn_pool(self, pool_size):
+    def __set_conn_pool(self, pool_size, max_retries):
+        # aiohttp does not support a max_retries param like requests
+        # For now we just mark it as a TODO feature
         from requests.adapters import HTTPAdapter
-        adapter = HTTPAdapter(pool_connections=pool_size, pool_maxsize=pool_size)
+        adapter = HTTPAdapter(pool_connections=pool_size, pool_maxsize=pool_size, max_retries=max_retries)
         self._session.mount('http://', adapter)
         self._session.mount('https://', adapter)
 
