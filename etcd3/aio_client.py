@@ -2,12 +2,11 @@
 asynchronous client
 """
 
+import aiohttp
 import json
+import six
 import ssl
 import warnings
-
-import aiohttp
-import six
 from aiohttp.client import _RequestContextManager
 
 from .baseclient import BaseClient
@@ -154,7 +153,7 @@ class AioClient(BaseClient):
             # https://stackoverflow.com/questions/44316292/ssl-sslerror-tlsv1-alert-protocol-version
             self.ssl_context = ssl_context = ssl.SSLContext()
             ssl_context.protocol = ssl.PROTOCOL_TLS
-            if not hasattr(ssl, 'PROTOCOL_TLSv1_1'): # should support TLSv1.2 to pass the test
+            if not hasattr(ssl, 'PROTOCOL_TLSv1_1'):  # should support TLSv1.2 to pass the test
                 warnings.warn(Etcd3Warning("the openssl version of your python is too old to support TLSv1.1+,"
                                            "please upgrade you python"))
             ssl_context.verify_mode = cert_reqs

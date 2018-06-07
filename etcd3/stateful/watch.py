@@ -238,7 +238,7 @@ class Watcher(object):
             raise TypeError("haven't watch on any event yet, use onEvent to watch a event")
 
     def _ensure_not_watching(self):
-        if self.watching == True:
+        if self.watching is True:
             raise RuntimeError("already watching")
 
     def _run(self):
@@ -294,7 +294,7 @@ class Watcher(object):
         """
         Stop watching, close the watch stream and exit the daemon thread
         """
-        if self.watching == False:
+        if self.watching is False:
             log.debug("try to stop, but seems not watching")
         log.debug("stopping watcher")
         self.watching = False
