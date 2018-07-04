@@ -1,4 +1,4 @@
-enum34>=1.1.6;python_version<3.4
+enum34>=1.1.6;python_version<'3.4'
 six>=1.11.0
 requests>=2.10.0
 semantic-version>=2.6.0
