@@ -83,5 +83,8 @@ setup(
         ':python_version >= "3.5"': [
             'aiohttp',
         ],
+        ':python_version < "3.4"': [
+            'enum34>=1.1.6',
+        ],
     },
 )
