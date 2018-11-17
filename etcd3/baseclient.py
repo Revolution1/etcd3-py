@@ -78,7 +78,8 @@ class BaseClient(AuthAPI, ClusterAPI, KVAPI, LeaseAPI, MaintenanceAPI, WatchAPI,
         try:
             import requests
 
-            r = requests.get(self._url('/version'), cert=self.cert, verify=self.verify, timeout=0.3)  # 300ms will do
+            r = requests.get(self._url('/version'), cert=self.cert,
+                    verify=self.verify, timeout=0.3, headers=self.headers)  # 300ms will do
             r.raise_for_status()
             v = r.json()
             self.cluster_version = v["etcdcluster"]
