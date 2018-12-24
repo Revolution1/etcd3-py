@@ -151,8 +151,15 @@ docker run -d \
 --initial-cluster node1=http://${NODE1}:2380
 ```
 
+## FAQ
+
+**Q:** authentication seems not working? Try calling api of a auth-enabled etcd server returned error "ErrUserEmpty error:'etcdserver: user name is empty'"
+
+**A:** Take a look at [#41](https://github.com/Revolution1/etcd3-py/issues/41), currently etcd3-py dose not authenticate automatically, you need to call client.auth() by yourself.
+
 ## TODO
 
 - [ ] benchmark
 - [ ] python-etcd(etcd v2) compatible client
 - [ ] etcd browser
+- [ ] support etcd v3.4.x
