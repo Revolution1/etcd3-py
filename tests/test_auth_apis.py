@@ -1,4 +1,6 @@
+import logging
 import pytest
+import re
 
 from etcd3.client import Client
 from etcd3.errors import ErrAuthNotEnabled
@@ -8,7 +10,7 @@ from etcd3.errors import ErrUserNotFound
 from etcd3.models import authpbPermissionType
 from etcd3.utils import incr_last_byte
 from tests.docker_cli import docker_run_etcd_main
-from .envs import protocol, host
+from .envs import protocol, host, ETCD_VER
 from .etcd_go_cli import etcdctl, NO_ETCD_SERVICE
 
 
@@ -43,9 +45,10 @@ def enable_auth():  # pragma: no cover
 
 
 @pytest.mark.skipif(NO_ETCD_SERVICE, reason="no etcd service available")
+# @pytest.mark.skipif(re.match(r'v3\.[0-2]\.{0,1}', ETCD_VER), reason="etcd < v3.3.0 does not support auth header")
 def test_auth_flow(client, request):
     teardown_auth(client)
-    request.addfinalizer(lambda:teardown_auth(client))
+    request.addfinalizer(lambda: teardown_auth(client))
 
     # test error
     with pytest.raises(ErrRootUserNotExist):
@@ -82,26 +85,29 @@ def test_auth_flow(client, request):
     assert len(r.roles) == 1
     assert r.roles[0] == 'root'
 
-    # test auth enable
-    client.auth_enable()
-    r = client.authenticate('root', 'root')
-    assert r.token
+    if re.match(r'v3\.[0-2]\.{0,1}', ETCD_VER):
+        logging.info('skipping tests of apis with auth enabled, cause etcd < v3.3.0 does not support auth header')
+    else:
+        # test auth enable
+        client.auth_enable()
+        r = client.authenticate('root', 'root')
+        assert r.token
 
-    # test client auth
-    client.auth('root', 'root')
-    assert client.token
-    assert client.user_get('root')
+        # test client auth
+        client.auth('root', 'root')
+        assert client.token
+        assert client.user_get('root')
 
-    # test user change password
-    client.user_change_password('root', 'changed')
-    client.auth('root', 'changed')
-    client.user_change_password('root', 'root')
-    client.auth('root', 'root')
+        # test user change password
+        client.user_change_password('root', 'changed')
+        client.auth('root', 'changed')
+        client.user_change_password('root', 'root')
+        client.auth('root', 'root')
 
-    # test auth disable
-    client.auth_disable()
-    with pytest.raises(ErrAuthNotEnabled):
-        client.authenticate('root', 'root')
+        # test auth disable
+        client.auth_disable()
+        with pytest.raises(ErrAuthNotEnabled):
+            client.authenticate('root', 'root')
 
     # test user revoke role
     client.user_revoke_role('root', 'root')

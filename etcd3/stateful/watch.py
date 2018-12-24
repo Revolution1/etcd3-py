@@ -1,11 +1,11 @@
+import time
+
 import logging
 import re
+import six
 import socket
 import threading
-import time
 from collections import deque
-
-import six
 from requests import ConnectionError
 from requests.exceptions import ChunkedEncodingError
 
@@ -110,6 +110,7 @@ class Watcher(object):
         """
         self.client = client
         self.revision = None
+        self.watch_id = None
         self.retries = 0
         self.errors = deque(maxlen=20)
         if max_retries == -1:
@@ -163,9 +164,10 @@ class Watcher(object):
 
     def request_cancel(self):  # pragma: no cover
         """
-        Cancel the watcher [Not Implemented because of etcd3]
+        Cancel the watcher [Not Implemented because of etcd3 returns no watch_id]
         """
-        pass
+        if self.watch_id:
+            return self.client.watch_cancel(watch_id=self.watch_id)
 
     def get_filter(self, filter):
         """
@@ -301,6 +303,7 @@ class Watcher(object):
         if not self._resp or (self._resp and self._resp.raw.closed):
             return
         try:
+            self.request_cancel()
             s = socket.fromfd(self._resp.raw._fp.fileno(), socket.AF_INET, socket.SOCK_STREAM)
             s.shutdown(socket.SHUT_RDWR)
             s.close()
@@ -368,6 +371,7 @@ class Watcher(object):
                         if 'created' in r:
                             log.debug("watch request created")
                             self.start_revision = r.header.revision
+                            self.watch_id = r.watch_id
                         if 'events' in r:
                             for event in r.events:
                                 yield Event(event)
