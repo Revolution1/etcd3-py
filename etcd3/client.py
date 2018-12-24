@@ -3,7 +3,6 @@ synchronous client
 """
 
 import json
-
 import requests
 import six
 from six.moves import urllib_parse
@@ -189,7 +188,8 @@ class Client(BaseClient):
         if self.token:
             kwargs.setdefault('headers', {}).setdefault('authorization', self.token)
         kwargs.setdefault('headers', {}).setdefault('user_agent', self.user_agent)
-        kwargs.setdefault('headers', {}).update(self.headers)
+        for k, v in self.headers.items():
+            kwargs.setdefault('headers', {}).setdefault(k, v)
         if isinstance(data, dict):
             if encode:
                 data = self._encodeRPCRequest(method, data)

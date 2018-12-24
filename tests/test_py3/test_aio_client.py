@@ -4,8 +4,9 @@ import time
 import pytest
 
 from etcd3 import AioClient
-from ..docker_cli import docker_rm_etcd_ssl, docker_run_etcd_ssl, CERT_PATH, KEY_PATH, CA_PATH, NO_DOCKER_SERVICE
-from ..envs import protocol, host, port
+from ..docker_cli import docker_rm_etcd_ssl, docker_run_etcd_ssl, CERT_PATH, KEY_PATH, CA_PATH, NO_DOCKER_SERVICE, \
+    docker_run_etcd_main
+from ..envs import protocol, host
 from ..etcd_go_cli import NO_ETCD_SERVICE
 from ..etcd_go_cli import etcdctl
 
@@ -27,7 +28,8 @@ async def aio_client(event_loop, request):
     init Etcd3Client, close its connection-pool when teardown
     """
 
-    c = AioClient(host, port, protocol)
+    _, p, _ = docker_run_etcd_main()
+    c = AioClient(host, p, protocol)
 
     def teardown():
         async def _t():

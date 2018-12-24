@@ -1,9 +1,12 @@
 import asyncio
 
+import logging
 import pytest
+import re
 
 from etcd3 import AioClient
-from ..envs import protocol, host, port
+from tests.docker_cli import docker_run_etcd_main
+from ..envs import protocol, host, ETCD_VER
 from ..etcd_go_cli import NO_ETCD_SERVICE
 from ..etcd_go_cli import etcdctl
 
@@ -24,8 +27,8 @@ async def aio_client(event_loop, request):
     """
     init Etcd3Client, close its connection-pool when teardown
     """
-
-    c = AioClient(host, port, protocol)
+    _, p, _ = docker_run_etcd_main()
+    c = AioClient(host, p, protocol)
 
     def teardown():
         async def _t():
@@ -36,6 +39,7 @@ async def aio_client(event_loop, request):
 
     request.addfinalizer(teardown)
     return c
+
 
 def teardown_auth():  # pragma: no cover
     """
@@ -55,14 +59,18 @@ def enable_auth():  # pragma: no cover
     etcdctl('user grant root root')
     etcdctl('auth enable')
 
+
 @pytest.mark.skipif(NO_ETCD_SERVICE, reason="no etcd service available")
 @pytest.mark.asyncio
 async def test_async_client_auth(aio_client, request):
+    teardown_auth()
     enable_auth()
     request.addfinalizer(teardown_auth)
 
     # test client auth
     await aio_client.auth('root', 'root')
     assert aio_client.token
-    assert aio_client.user_get('root')
-
+    if re.match(r'v3\.[0-2]\.{0,1}', ETCD_VER):
+        logging.info('skipping tests of apis with auth enabled, cause etcd < v3.3.0 does not support auth header')
+    else:
+        assert await aio_client.user_get('root')
