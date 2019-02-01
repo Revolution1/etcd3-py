@@ -5,6 +5,7 @@ from .cluster import ClusterAPI
 from .extra import ExtraAPI
 from .kv import KVAPI
 from .lease import LeaseAPI
+from .lock import LockAPI
 from .maintenance import MaintenanceAPI
 from .watch import WatchAPI
 
@@ -17,4 +18,5 @@ __all__ = [
     'MaintenanceAPI',
     'LeaseAPI',
     'BaseAPI'
+    'LockAPI'
 ]
