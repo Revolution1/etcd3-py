@@ -23,7 +23,7 @@ def client():
 def test_hash(client):
     assert client.hash().hash
 
-
+@pytest.mark.timeout(60)
 @pytest.mark.skipif(NO_ETCD_SERVICE, reason="no etcd service available")
 def test_lock_flow(client):
     lease1 = client.Lease(5)
