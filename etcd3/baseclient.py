@@ -14,6 +14,7 @@ from .apis import ClusterAPI
 from .apis import ExtraAPI
 from .apis import KVAPI
 from .apis import LeaseAPI
+from .apis import LockAPI
 from .apis import MaintenanceAPI
 from .apis import WatchAPI
 from .stateful import Lease
@@ -46,7 +47,8 @@ class BaseModelizedStreamResponse(object):  # pragma: no cover
         raise NotImplementedError
 
 
-class BaseClient(AuthAPI, ClusterAPI, KVAPI, LeaseAPI, MaintenanceAPI, WatchAPI, ExtraAPI):
+class BaseClient(AuthAPI, ClusterAPI, KVAPI, LeaseAPI, MaintenanceAPI,
+                 WatchAPI, ExtraAPI, LockAPI):
     def __init__(self, host='localhost', port=2379, protocol='http',
                  cert=(), verify=None,
                  timeout=None, headers=None, user_agent=None, pool_size=30,
