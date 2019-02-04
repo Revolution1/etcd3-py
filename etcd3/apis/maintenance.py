@@ -18,7 +18,7 @@ class MaintenanceAPI(BaseAPI):
         :type alarm: etcdserverpbAlarmType
         :param alarm: alarm is the type of alarm to consider for this request.
         """
-        method = '/v3alpha/maintenance/alarm'
+        method = '/maintenance/alarm'
         data = {
             "action": action,
             "memberID": memberID,
@@ -66,7 +66,7 @@ class MaintenanceAPI(BaseAPI):
         """
         Defragment defragments a member's backend database to recover storage space.
         """
-        method = '/v3alpha/maintenance/defragment'
+        method = '/maintenance/defragment'
         data = {}
         return self.call_rpc(method, data=data)
 
@@ -76,7 +76,7 @@ class MaintenanceAPI(BaseAPI):
         This is designed for testing; do not use this in production when there
         are ongoing transactions.
         """
-        method = '/v3alpha/maintenance/hash'
+        method = '/maintenance/hash'
         data = {}
         return self.call_rpc(method, data=data)
 
@@ -84,7 +84,7 @@ class MaintenanceAPI(BaseAPI):
         """
         Snapshot sends a snapshot of the entire backend from a member over a stream to a client.
         """
-        method = '/v3alpha/maintenance/snapshot'
+        method = '/maintenance/snapshot'
         data = {}
         return self.call_rpc(method, data=data, stream=True)
 
@@ -92,6 +92,6 @@ class MaintenanceAPI(BaseAPI):
         """
         Status gets the status of the member.
         """
-        method = '/v3alpha/maintenance/status'
+        method = '/maintenance/status'
         data = {}
         return self.call_rpc(method, data=data)

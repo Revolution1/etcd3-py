@@ -23,7 +23,7 @@ class WatchAPI(BaseAPI):
         :type cancel_request: dict
         :param cancel_request: None
         """
-        method = '/v3alpha/watch'
+        method = '/watch'
         data = {
             "create_request": create_request,
             "cancel_request": cancel_request

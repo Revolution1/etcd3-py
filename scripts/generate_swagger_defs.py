@@ -59,7 +59,7 @@ GEN_CMD = '''protoc -I=$GOPATH/src/go.etcd.io/ \
     -I$GOPATH/src/github.com/grpc-ecosystem/grpc-gateway/third_party/googleapis \
     --swagger_out={out} {proto}'''
 
-PROTOS = (
+SPECS = (
     (
         '3.0.x',
         (
@@ -106,12 +106,12 @@ def find_newest_version(pattern, tags=TAGS):
     return max(versions, key=lambda v: Version(v))
 
 
-DEFS_DIR = os.path.join(os.path.dirname(__file__), '../etcd3/protodefs')
+DEFS_DIR = os.path.join(os.path.dirname(__file__), '../etcd3/swaggerdefs')
 
 outs = []
 init = ['import re\n',
-        'PROTOS = []\n']
-for v, files in PROTOS:
+        'SPECS = []\n']
+for v, files in SPECS:
     do_cmd('cd %s; git checkout v%s' % (ETCD_PATH, find_newest_version(v)))
     vname = 'v' + v.replace('.', '_')
     spec_name = 'spec_' + vname
@@ -130,10 +130,8 @@ for v, files in PROTOS:
         with open(os.path.join(out_dir, '__init__.py'), 'w') as f:
             f.write('%s = %s\n' % (spec_name, repr({
                 'consumes': ['application/json'],
-                'definitions': {},
                 'info': {'title': 'etcd api v' + v,
                          'version': v},
-                'paths': {},
                 'produces': ['application/json'],
                 'schemes': ['http', 'https'],
                 'swagger': '2.0'}
@@ -144,20 +142,22 @@ for v, files in PROTOS:
                     spec = json.load(jf)
                 f.write('%s = %s\n' % (name, repr(spec)))
                 f.write(
-                    "{spec_name}['paths'].update({name}.get('paths', {{}}))\n{spec_name}['definitions'].update({name}.get('definitions', {{}}))\n".format(
-                        spec_name=spec_name, name=name))
+                    "{spec_name}.setdefault('paths', {{}}).update({name}.get('paths', {{}}))\n"
+                    "{spec_name}.setdefault('definitions', {{}}).update({name}.get('definitions', {{}}))\n"
+                    "{spec_name}.setdefault('x-stream-definitions', {{}}).update({name}.get('x-stream-definitions', {{}}))\n"
+                        .format(spec_name=spec_name, name=name))
     init.append('from .%s import %s\n' % (vname, spec_name))
-    init.append("PROTOS.append(('%s', %s))\n" % (v, spec_name))
+    init.append("SPECS.append(('%s', %s))\n" % (v, spec_name))
 with open(os.path.join(DEFS_DIR, '__init__.py'), 'w') as f:
     f.write('\n'.join(init))
     f.write('\n')
     f.write("""\
-def get_proto(server_version):
+def get_spec(server_version=''):
     p = server_version.replace('.', r'\.').replace('x', r'\d+')
     r = re.compile(p)
-    for v, spec in PROTOS:
+    for v, spec in SPECS:
         if r.match(v):
             return spec
-    if PROTOS:
-        return PROTOS[-1][-1] # return the newest by default
+    if SPECS:
+        return SPECS[-1][-1] # return the newest by default
 """)

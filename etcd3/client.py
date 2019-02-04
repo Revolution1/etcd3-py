@@ -5,7 +5,6 @@ synchronous client
 import json
 import requests
 import six
-from six.moves import urllib_parse
 
 from .baseclient import BaseClient
 from .baseclient import BaseModelizedStreamResponse
@@ -20,13 +19,14 @@ class ModelizedStreamResponse(BaseModelizedStreamResponse):
     Model of a stream response
     """
 
-    def __init__(self, method, resp, decode=True):
+    def __init__(self, client, method, resp, decode=True):
         """
         :param resp: Response
         """
+        self.client = client
+        self.method = method
         self.resp = resp
         self.decode = decode
-        self.method = method
 
     def close(self):
         """
@@ -51,7 +51,7 @@ class ModelizedStreamResponse(BaseModelizedStreamResponse):
                 # {"error":{"grpc_code":14,"http_code":503,"message":"rpc error: code = Unavailable desc = transport is closing","http_status":"Service Unavailable"}}
                 err = data.get('error')
                 raise get_client_error(err.get('message'), code=err.get('code'), status=err.get('http_code'))
-            yield Client._modelizeResponseData(self.method, data, decode=self.decode)
+            yield self.client._modelizeResponseData(self.method, data, decode=self.decode)
 
 
 def iter_response(resp):
@@ -81,7 +81,7 @@ def iter_response(resp):
 
 
 class Client(BaseClient):
-    def __init__(self, host='localhost', port=2379, protocol='http',
+    def __init__(self, host='127.0.0.1', port=2379, protocol='http',
                  cert=(), verify=None,
                  timeout=None, headers=None, user_agent=None, pool_size=30,
                  username=None, password=None, token=None, max_retries=0):
@@ -117,19 +117,8 @@ class Client(BaseClient):
         """
         return self._session.close()
 
-    @property
-    def baseurl(self):
-        """
-        :return: baseurl from protocol, host, self
-        """
-        return '{}://{}:{}'.format(self.protocol, self.host, self.port)
-
-    def _url(self, method):
-        return urllib_parse.urljoin(self.baseurl, method)
-
-    @classmethod
-    def _modelizeStreamResponse(cls, method, resp, decode=True):
-        return ModelizedStreamResponse(method, resp, decode)
+    def _modelizeStreamResponse(self, method, resp, decode=True):
+        return ModelizedStreamResponse(self, method, resp, decode)
 
     @staticmethod
     def _raise_for_status(resp):

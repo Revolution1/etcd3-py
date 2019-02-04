@@ -6,11 +6,10 @@ import json
 import keyword
 import os
 import re
+import six
 from collections import OrderedDict
 
-import six
-
-from .utils import memoize_in_object
+from .utils import memoize_in_object, cached_property
 
 try:
     import yaml
@@ -155,6 +154,11 @@ class SwaggerSpec(object):
         """
         return self.spec.get(key, *args, **kwargs)
 
+    @cached_property
+    def _prefix(self):
+        for k in self.spec['paths']:
+            return '/' + k.split('/')[1]
+
     @memoize_in_object
     def getPath(self, key):
         """
@@ -164,7 +168,9 @@ class SwaggerSpec(object):
         :param key: receive a SwaggerNode or a $ref string of schema
         :rtype: SwaggerNode
         """
-        if key in self.spec['paths']:
+        if self._prefix + key in self.spec['paths']:
+            node = self.paths[self._prefix + key]
+        elif key in self.spec['paths']:
             node = self.paths[key]
         elif isinstance(key, SwaggerNode):
             node = key

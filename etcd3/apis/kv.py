@@ -19,7 +19,7 @@ class KVAPI(BaseAPI):
             applied to the local database such that compacted entries are totally
             removed from the backend database. [default: False]
         """
-        method = '/v3alpha/kv/compaction'
+        method = '/kv/compaction'
         data = {
             "revision": revision,
             "physical": physical
@@ -51,7 +51,7 @@ class KVAPI(BaseAPI):
         :type txn_obj: bool
         :param txn_obj: return dict for the txn instead of call the api
         """
-        method = '/v3alpha/kv/deleterange'
+        method = '/kv/deleterange'
         if all:
             key = range_end = '\0'
         if prefix:
@@ -91,7 +91,7 @@ class KVAPI(BaseAPI):
         :type txn_obj: bool
         :param txn_obj: return dict for the txn instead of call the api
         """
-        method = '/v3alpha/kv/put'
+        method = '/kv/put'
         data = {
             "key": key,
             "value": value,
@@ -177,7 +177,7 @@ class KVAPI(BaseAPI):
         :type txn_obj: bool
         :param txn_obj: return dict for the txn instead of call the api
         """
-        method = '/v3alpha/kv/range'
+        method = '/kv/range'
         if all:
             key = range_end = '\0'
         if prefix:
@@ -220,7 +220,7 @@ class KVAPI(BaseAPI):
         :type failure: list of dict
         :param failure: failure is a list of requests which will be applied when compare evaluates to false.
         """
-        method = '/v3alpha/kv/txn'
+        method = '/kv/txn'
         data = {
             "compare": compare,
             "success": success,

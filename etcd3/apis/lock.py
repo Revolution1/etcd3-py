@@ -19,7 +19,7 @@ class LockAPI(BaseAPI):
             value of 0 indicates no lease.
         """
 
-        method = '/v3beta/lock/lock'
+        method = '/lock/lock'
         data = {
             "name": name,
             "lease": lease
@@ -39,7 +39,7 @@ class LockAPI(BaseAPI):
             value of 0 indicates no lease.
         """
 
-        method = '/v3beta/lock/unlock'
+        method = '/lock/unlock'
         data = {
             "key": key,
         }
