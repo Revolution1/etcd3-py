@@ -85,7 +85,7 @@ def test_auth_flow(client, request):
     assert len(r.roles) == 1
     assert r.roles[0] == 'root'
 
-    if re.match(r'v3\.[0-2]\.{0,1}', ETCD_VER):
+    if re.match(r'v?3\.[0-2]\.{0,1}', ETCD_VER):
         logging.info('skipping tests of apis with auth enabled, cause etcd < v3.3.0 does not support auth header')
     else:
         # test auth enable

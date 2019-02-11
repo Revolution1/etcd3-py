@@ -3,11 +3,11 @@ synchronous client
 """
 
 import abc
-import semantic_version as sem
 import warnings
+
+import semantic_version as sem
 from six.moves import urllib_parse
 
-from errors.errors import UnsupportedServerVersion
 from .apis import AuthAPI
 from .apis import ClusterAPI
 from .apis import ExtraAPI
@@ -16,6 +16,7 @@ from .apis import LeaseAPI
 from .apis import LockAPI
 from .apis import MaintenanceAPI
 from .apis import WatchAPI
+from .errors import UnsupportedServerVersion
 from .stateful import Lease
 from .stateful import Lock
 from .stateful import Txn
@@ -23,6 +24,7 @@ from .stateful import Watcher
 from .swagger_helper import SwaggerSpec
 from .swaggerdefs import get_spec
 from .utils import Etcd3Warning
+from .utils import log
 from .version import __version__
 
 
@@ -43,15 +45,18 @@ class BaseModelizedStreamResponse(object):  # pragma: no cover
         raise NotImplementedError
 
 
+DEFAULT_VERSION = '3.3.0'
+
+
 class BaseClient(AuthAPI, ClusterAPI, KVAPI, LeaseAPI, MaintenanceAPI,
                  WatchAPI, ExtraAPI, LockAPI):
     def __init__(self, host='127.0.0.1', port=2379, protocol='http',
                  cert=(), verify=None,
                  timeout=None, headers=None, user_agent=None, pool_size=30,
-                 username=None, password=None, token=None):
+                 username=None, password=None, token=None,
+                 server_version=DEFAULT_VERSION, cluster_version=DEFAULT_VERSION):
         self.host = host
         self.port = port
-        self.cert = None
         self.cert = cert
         self.protocol = protocol
         if cert:
@@ -65,11 +70,14 @@ class BaseClient(AuthAPI, ClusterAPI, KVAPI, LeaseAPI, MaintenanceAPI,
         self.username = username
         self.password = password
         self.token = token
-        self.cluster_version = None
-        self.server_version = None
+        self.server_version = server_version
+        self.cluster_version = cluster_version
         self.api_spec = None
         self.api_prefix = '/v3alpha'
         self._retrieve_version()
+        self._verify_version()
+        self._get_prefix()
+        self.api_spec = SwaggerSpec(get_spec(self.server_version))
 
     def _retrieve_version(self):  # pragma: no cover
         try:
@@ -79,33 +87,36 @@ class BaseClient(AuthAPI, ClusterAPI, KVAPI, LeaseAPI, MaintenanceAPI,
                              verify=self.verify, timeout=0.3, headers=self.headers)  # 300ms will do
             r.raise_for_status()
             v = r.json()
-            self.cluster_version = v["etcdcluster"]
-            self.cluster_version_sem = sem.Version(self.cluster_version)
             self.server_version = v["etcdserver"]
+            self.cluster_version = v["etcdcluster"]
+
+            self.cluster_version_sem = sem.Version(self.cluster_version)
             self.server_version_sem = sem.Version(self.server_version)
-
-            if self.server_version_sem < sem.Version('3.0.0'):
-                raise UnsupportedServerVersion(self.server_version)
-
-            if self.server_version_sem < sem.Version('3.2.2'):
-                warnings.warn(Etcd3Warning("detected etcd server version(%s) is lower than 3.2.2, "
-                                           "the gRPC-JSON-Gateway may not work" % self.server_version))
-
-            if self.server_version_sem < sem.Version('3.3.0'):
-                warnings.warn(Etcd3Warning("detected etcd server version(%s) is lower than 3.3.0, "
-                                           "authentication methods may not work" % self.server_version))
-
-            if self.server_version_sem < sem.Version('3.3.0'):
-                self.api_prefix = '/v3alpha'
-            elif sem.Version('3.3.0') <= self.server_version < sem.Version('3.4.0'):
-                self.api_prefix = '/v3beta'
-            else:
-                self.api_prefix = '/v3'
-            self.api_spec = SwaggerSpec(get_spec(self.server_version))
         except Exception:
+            log.debug('cannot detect etcd server version', exc_info=True)
             warnings.warn(Etcd3Warning("cannot detect etcd server version\n"
                                        "1. maybe is a network problem, please check your network connection\n"
                                        "2. maybe your etcd server version is too low, required: 3.2.2+"))
+
+    def _verify_version(self):
+        if self.server_version_sem < sem.Version('3.0.0'):
+            raise UnsupportedServerVersion(self.server_version)
+
+        if self.server_version_sem < sem.Version('3.2.2'):
+            warnings.warn(Etcd3Warning("detected etcd server version(%s) is lower than 3.2.2, "
+                                       "the gRPC-JSON-Gateway may not work" % self.server_version))
+
+        if self.server_version_sem < sem.Version('3.3.0'):
+            warnings.warn(Etcd3Warning("detected etcd server version(%s) is lower than 3.3.0, "
+                                       "authentication methods may not work" % self.server_version))
+
+    def _get_prefix(self):
+        if self.server_version_sem < sem.Version('3.3.0'):
+            self.api_prefix = '/v3alpha'
+        elif sem.Version('3.3.0') <= self.server_version_sem < sem.Version('3.4.0'):
+            self.api_prefix = '/v3beta'
+        else:
+            self.api_prefix = '/v3'
 
     @property
     def baseurl(self):
@@ -147,7 +158,7 @@ class BaseClient(AuthAPI, ClusterAPI, KVAPI, LeaseAPI, MaintenanceAPI,
 
     @classmethod
     def _modelizeStreamResponse(cls, method, resp, decode=True):  # pragma: no cover
-        raise NotImplemented
+        raise NotImplementedError
 
     def __enter__(self):
         return self

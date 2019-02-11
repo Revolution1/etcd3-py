@@ -43,10 +43,10 @@ def test_lease_flow(client):
     assert set(r.keys) == {b'foo', b'fizz'}
 
     for i in client.lease_keep_alive(b'{"ID":%d}\n' % ID):
-        assert i.result.ID == ID
-        assert i.result.TTL == TTL
+        assert i.ID == ID
+        assert i.TTL == TTL
     r = client.lease_keep_alive_once(ID)
-    assert r.result.ID == ID
-    assert r.result.TTL == TTL
+    assert r.ID == ID
+    assert r.TTL == TTL
     assert client.lease_revoke(ID)
     assert client.lease_time_to_live(ID).TTL == -1

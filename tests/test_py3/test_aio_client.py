@@ -64,12 +64,12 @@ async def test_async_stream(aio_client):
             if not times:
                 break
             if not created:
-                created = i.result.created
+                created = i.created
                 assert created
             etcdctl('put test_key test_value')
-            if i.result.events:
-                assert i.result.events[0].kv.key == b'test_key'
-                assert i.result.events[0].kv.value == b'test_value'
+            if i.events:
+                assert i.events[0].kv.key == b'test_key'
+                assert i.events[0].kv.value == b'test_value'
                 times -= 1
 
 

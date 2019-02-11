@@ -41,12 +41,12 @@ def test_stream(client):
             if not times:  # pragma: no cover
                 break
             if not created:
-                created = i.result.created
+                created = i.created
                 assert created
             etcdctl('put test_key test_value')
-            if i.result.events:
-                assert i.result.events[0].kv.key == b'test_key'
-                assert i.result.events[0].kv.value == b'test_value'
+            if i.events:
+                assert i.events[0].kv.key == b'test_key'
+                assert i.events[0].kv.value == b'test_value'
                 times -= 1
 
 
@@ -71,11 +71,11 @@ def test_patched_stream(client, monkeypatch):
             if not times:  # pragma: no cover
                 break
             if not created:
-                created = i.result.created
+                created = i.created
                 assert created
-            if i.result.events:
-                assert i.result.events[0].kv.key == b'test_key'
-                assert i.result.events[0].kv.value == b'test_value'
+            if i.events:
+                assert i.events[0].kv.key == b'test_key'
+                assert i.events[0].kv.value == b'test_value'
                 times -= 1
 
 

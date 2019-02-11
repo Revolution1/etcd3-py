@@ -151,13 +151,14 @@ for v, files in SPECS:
 with open(os.path.join(DEFS_DIR, '__init__.py'), 'w') as f:
     f.write('\n'.join(init))
     f.write('\n')
-    f.write("""\
+    f.write("""
 def get_spec(server_version=''):
+    server_version = server_version or ''
     p = server_version.replace('.', r'\.').replace('x', r'\d+')
     r = re.compile(p)
     for v, spec in SPECS:
         if r.match(v):
             return spec
     if SPECS:
-        return SPECS[-1][-1] # return the newest by default
+        return SPECS[-1][-1]  # return the newest by default
 """)

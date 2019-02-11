@@ -54,6 +54,6 @@ def test_snapshot(client):
     r = client.snapshot()
     with open('/tmp/etcd-snap.db', 'wb') as f:
         for i in r:
-            assert i.result.blob
-            f.write(i.result.blob)
+            assert i.blob
+            f.write(i.blob)
     assert etcdctl('snapshot status /tmp/etcd-snap.db')

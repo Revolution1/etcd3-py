@@ -34,12 +34,12 @@ def test_watch_api(client, request):
             if not times:  # pragma: no cover
                 break
             if not created:
-                created = i.result.created
+                created = i.created
                 assert created
             etcdctl('put test_key test_value')
-            if i.result.events:
-                assert i.result.events[0].kv.key == b'test_key'
-                assert i.result.events[0].kv.value == b'test_value'
+            if i.events:
+                assert i.events[0].kv.key == b'test_key'
+                assert i.events[0].kv.value == b'test_value'
                 times -= 1
 
     times = 5
@@ -49,12 +49,12 @@ def test_watch_api(client, request):
             if not times:  # pragma: no cover
                 break
             if not created:
-                created = i.result.created
+                created = i.created
                 assert created
             etcdctl('put test_key test_value')
-            if i.result.events:
-                assert i.result.events[0].kv.key == b'test_key'
-                assert i.result.events[0].kv.value == b'test_value'
+            if i.events:
+                assert i.events[0].kv.key == b'test_key'
+                assert i.events[0].kv.value == b'test_value'
                 times -= 1
 
     times = 5
@@ -64,12 +64,12 @@ def test_watch_api(client, request):
             if not times:  # pragma: no cover
                 break
             if not created:
-                created = i.result.created
+                created = i.created
                 assert created
             etcdctl('put test_key test_value')
-            if i.result.events:
-                assert i.result.events[0].kv.key == b'test_key'
-                assert i.result.events[0].kv.value == b'test_value'
+            if i.events:
+                assert i.events[0].kv.key == b'test_key'
+                assert i.events[0].kv.value == b'test_value'
                 times -= 1
     # there is no way to test cancel request, cause we cannot get the watcher id
     # but it may be supported in the future

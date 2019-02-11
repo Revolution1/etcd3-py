@@ -1,12 +1,11 @@
-import itertools
-import sys
-import time
-
 import enum
 import functools
+import itertools
 import logging
 import os
 import shlex
+import sys
+import time
 import warnings
 from collections import namedtuple, OrderedDict, Hashable
 from subprocess import Popen, PIPE
@@ -42,6 +41,8 @@ if six.PY2:
             last[1] = root[0] = self._OrderedDict__map[key] = [last, root, key]
 else:
     OrderedDictEx = OrderedDict
+
+log = logging.getLogger('etcd3')
 
 
 def lru_cache(maxsize=100):  # pragma: no cover

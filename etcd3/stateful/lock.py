@@ -1,15 +1,14 @@
-import logging
 import os
-import six
 import socket
 import tempfile
 import threading
 import uuid
 
+import six
+
 from .watch import EventType
 from ..errors import ErrLeaseNotFound
-
-log = logging.getLogger('etcd3.Lock')
+from ..utils import log
 
 
 class EtcdLockError(Exception):

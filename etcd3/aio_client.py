@@ -2,15 +2,17 @@
 asynchronous client
 """
 
-import aiohttp
 import json
-import six
 import ssl
 import warnings
+
+import aiohttp
+import six
 from aiohttp.client import _RequestContextManager
 
 from .baseclient import BaseClient
 from .baseclient import BaseModelizedStreamResponse
+from .baseclient import DEFAULT_VERSION
 from .errors import Etcd3Exception
 from .errors import Etcd3StreamError
 from .errors import get_client_error
@@ -84,7 +86,10 @@ class ModelizedStreamResponse(BaseModelizedStreamResponse):
             # {"error":{"grpc_code":14,"http_code":503,"message":"rpc error: code = Unavailable desc = transport is closing","http_status":"Service Unavailable"}}
             err = data.get('error')
             raise get_client_error(err.get('message'), code=err.get('code'), status=err.get('http_code'))
-        return self.client._modelizeResponseData(self.method, data, decode=self.decode)
+        r = self.client._modelizeResponseData(self.method, data, decode=self.decode)
+        if r.result:
+            r = r.result
+        return r
 
 
 class ResponseIter():
@@ -131,11 +136,13 @@ class AioClient(BaseClient):
     def __init__(self, host='127.0.0.1', port=2379, protocol='http',
                  cert=(), verify=None,
                  timeout=None, headers=None, user_agent=None, pool_size=30,
-                 username=None, password=None, token=None):
+                 username=None, password=None, token=None,
+                 server_version=DEFAULT_VERSION, cluster_version=DEFAULT_VERSION):
         super(AioClient, self).__init__(host=host, port=port, protocol=protocol,
                                         cert=cert, verify=verify,
                                         timeout=timeout, headers=headers, user_agent=user_agent, pool_size=pool_size,
-                                        username=username, password=password, token=token)
+                                        username=username, password=password, token=token,
+                                        server_version=server_version, cluster_version=cluster_version)
         self.ssl_context = None
         if self.cert:
             if verify is False:

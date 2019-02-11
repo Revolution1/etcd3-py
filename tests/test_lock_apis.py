@@ -4,8 +4,8 @@ import pytest
 
 from etcd3.client import Client
 from tests.docker_cli import docker_run_etcd_main
-from .envs import protocol, host, port
-from .etcd_go_cli import NO_ETCD_SERVICE, etcdctl
+from .envs import protocol, host
+from .etcd_go_cli import NO_ETCD_SERVICE
 
 
 @pytest.fixture(scope='module')
@@ -18,10 +18,6 @@ def client():
     yield c
     c.close()
 
-
-@pytest.mark.skipif(NO_ETCD_SERVICE, reason="no etcd service available")
-def test_hash(client):
-    assert client.hash().hash
 
 @pytest.mark.timeout(60)
 @pytest.mark.skipif(NO_ETCD_SERVICE, reason="no etcd service available")

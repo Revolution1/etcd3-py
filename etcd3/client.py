@@ -3,11 +3,13 @@ synchronous client
 """
 
 import json
+
 import requests
 import six
 
 from .baseclient import BaseClient
 from .baseclient import BaseModelizedStreamResponse
+from .baseclient import DEFAULT_VERSION
 from .errors import Etcd3Exception
 from .errors import Etcd3StreamError
 from .errors import get_client_error
@@ -51,7 +53,10 @@ class ModelizedStreamResponse(BaseModelizedStreamResponse):
                 # {"error":{"grpc_code":14,"http_code":503,"message":"rpc error: code = Unavailable desc = transport is closing","http_status":"Service Unavailable"}}
                 err = data.get('error')
                 raise get_client_error(err.get('message'), code=err.get('code'), status=err.get('http_code'))
-            yield self.client._modelizeResponseData(self.method, data, decode=self.decode)
+            r = self.client._modelizeResponseData(self.method, data, decode=self.decode)
+            if r.result:
+                r = r.result
+            yield r
 
 
 def iter_response(resp):
@@ -84,7 +89,8 @@ class Client(BaseClient):
     def __init__(self, host='127.0.0.1', port=2379, protocol='http',
                  cert=(), verify=None,
                  timeout=None, headers=None, user_agent=None, pool_size=30,
-                 username=None, password=None, token=None, max_retries=0):
+                 username=None, password=None, token=None, max_retries=0,
+                 server_version=DEFAULT_VERSION, cluster_version=DEFAULT_VERSION):
         """
         :param max_retries: The maximum number of retries each connection
             should attempt. Note, this applies only to failed DNS lookups, socket
@@ -97,7 +103,8 @@ class Client(BaseClient):
         super(Client, self).__init__(host=host, port=port, protocol=protocol,
                                      cert=cert, verify=verify,
                                      timeout=timeout, headers=headers, user_agent=user_agent, pool_size=pool_size,
-                                     username=username, password=password, token=token)
+                                     username=username, password=password, token=token,
+                                     server_version=server_version, cluster_version=cluster_version)
         self._session = requests.session()
         self._session.cert = self.cert
         self._session.verify = self.verify
@@ -157,7 +164,7 @@ class Client(BaseClient):
         """
         return self._session.post(url, data=data, json=json, **kwargs)
 
-    def call_rpc(self, method, data=None, stream=False, encode=True, raw=False, **kwargs):
+    def call_rpc(self, method, data=None, stream=False, encode=True, raw=False, **kwargs):  # TODO: add modelize param
         """
         call ETCDv3 RPC and return response object
 

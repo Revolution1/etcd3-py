@@ -1,14 +1,12 @@
 """
 Sync lease util
 """
-import logging
 import threading
 import time
 
 from ..errors import ErrLeaseNotFound
+from ..utils import log
 from ..utils import retry
-
-log = logging.getLogger('etcd3.Lease')
 
 
 class Lease(object):
