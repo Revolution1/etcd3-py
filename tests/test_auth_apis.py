@@ -1,6 +1,7 @@
 import logging
-import pytest
 import re
+
+import pytest
 
 from etcd3.client import Client
 from etcd3.errors import ErrAuthNotEnabled
@@ -85,7 +86,7 @@ def test_auth_flow(client, request):
     assert len(r.roles) == 1
     assert r.roles[0] == 'root'
 
-    if re.match(r'v?3\.[0-2]\.{0,1}', ETCD_VER):
+    if re.match(r'v?3\.[0-2]\.{0,1}', ETCD_VER):  # pragma: no cover
         logging.info('skipping tests of apis with auth enabled, cause etcd < v3.3.0 does not support auth header')
     else:
         # test auth enable

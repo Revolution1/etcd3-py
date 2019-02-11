@@ -6,16 +6,11 @@ import json
 import keyword
 import os
 import re
-import six
 from collections import OrderedDict
 
-from .utils import memoize_in_object, cached_property
+import six
 
-try:
-    import yaml
-    import yaml.resolver
-except ImportError:  # pragma: no cover
-    yaml = None
+from .utils import memoize_in_object, cached_property
 
 if six.PY2:  # pragma: no cover
     file_types = file, io.IOBase  # noqa: F821
@@ -74,13 +69,13 @@ class SwaggerSpec(object):
     Parse the swagger spec of gRPC-JSON-Gateway to object tree
     """
 
-    def __init__(self, spec):
+    def __init__(self, spec):  # pragma: no cover
         """
         :param spec: dict or json string or yaml string
         """
         if isinstance(spec, dict):
             spec_content = spec
-        elif isinstance(spec, file_types):  # pragma: no cover
+        elif isinstance(spec, file_types):
             pos = spec.tell()
             spec_content = spec.read()
             spec.seek(pos)
@@ -90,24 +85,24 @@ class SwaggerSpec(object):
                     spec_content = f.read()
             else:
                 spec_content = spec
-        else:  # pragma: no cover
+        else:
             raise TypeError('spec should be one of path, file obj, spec string')
         if isinstance(spec_content, dict):
             self.spec = spec_content
         else:
             try:
                 self.spec = json.loads(spec_content, object_pairs_hook=OrderedDict)
-            except Exception:  # pragma: no cover
-                if not yaml:
-                    raise ImportError("No module named yaml")
+            except Exception:
+                import yaml
+                import yaml.resolver
                 try:
-                    def ordered_load(stream, Loader=yaml.Loader, object_pairs_hook=OrderedDict):
-                        class OrderedLoader(Loader):
+                    def ordered_load(stream, loader=yaml.Loader, object_pairs_hook=OrderedDict):
+                        class OrderedLoader(loader):
                             pass
 
-                        def construct_mapping(loader, node):
+                        def construct_mapping(loader_, node):
                             loader.flatten_mapping(node)
-                            return object_pairs_hook(loader.construct_pairs(node))
+                            return object_pairs_hook(loader_.construct_pairs(node))
 
                         OrderedLoader.add_constructor(
                             yaml.resolver.BaseResolver.DEFAULT_MAPPING_TAG,
