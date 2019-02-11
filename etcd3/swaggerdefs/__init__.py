@@ -2,14 +2,6 @@ import re
 
 SPECS = []
 
-from .v3_0_x import spec_v3_0_x
-
-SPECS.append(('3.0.x', spec_v3_0_x))
-
-from .v3_1_x import spec_v3_1_x
-
-SPECS.append(('3.1.x', spec_v3_1_x))
-
 from .v3_2_x import spec_v3_2_x
 
 SPECS.append(('3.2.x', spec_v3_2_x))

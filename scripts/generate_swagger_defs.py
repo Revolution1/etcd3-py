@@ -60,18 +60,19 @@ GEN_CMD = '''protoc -I=$GOPATH/src/go.etcd.io/ \
     --swagger_out={out} {proto}'''
 
 SPECS = (
-    (
-        '3.0.x',
-        (
-            'etcdserver/etcdserverpb/rpc.proto',
-        )
-    ),
-    (
-        '3.1.x',
-        (
-            'etcdserver/etcdserverpb/rpc.proto',
-        )
-    ),
+    # version < 3.2.0 GRPC-Gateway seems not working
+    # (
+    #     '3.0.x',
+    #     (
+    #         'etcdserver/etcdserverpb/rpc.proto',
+    #     )
+    # ),
+    # (
+    #     '3.1.x',
+    #     (
+    #         'etcdserver/etcdserverpb/rpc.proto',
+    #     )
+    # ),
     (
         '3.2.x',
         (

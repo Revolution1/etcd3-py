@@ -92,7 +92,7 @@ class ModelizedStreamResponse(BaseModelizedStreamResponse):
         return r
 
 
-class ResponseIter():
+class ResponseIter(object):
     """
     yield response content by every json object
     we don't yield by line, because the content of etcd's gRPC-JSON-Gateway stream response
