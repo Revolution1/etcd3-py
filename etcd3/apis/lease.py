@@ -9,7 +9,7 @@ class LeaseAPI(BaseAPI):
         :type ID: int
         :param ID: ID is the lease ID to revoke. When the ID is revoked, all associated keys will be deleted.
         """
-        method = '/v3alpha/kv/lease/revoke'
+        method = '/kv/lease/revoke'
         data = {
             "ID": ID
         }
@@ -24,7 +24,7 @@ class LeaseAPI(BaseAPI):
         :type keys: bool
         :param keys: keys is true to query all the keys attached to this lease.
         """
-        method = '/v3alpha/kv/lease/timetolive'
+        method = '/kv/lease/timetolive'
         data = {
             "ID": ID,
             "keys": keys
@@ -42,7 +42,7 @@ class LeaseAPI(BaseAPI):
         :type ID: int
         :param ID: ID is the requested ID for the lease. If ID is set to 0, the lessor chooses an ID.
         """
-        method = '/v3alpha/lease/grant'
+        method = '/lease/grant'
         data = {
             "TTL": TTL,
             "ID": ID
@@ -60,7 +60,7 @@ class LeaseAPI(BaseAPI):
 
         :param data: ID stream inputs of the lease to keep alive. which not works for now
         """
-        method = '/v3alpha/lease/keepalive'
+        method = '/lease/keepalive'
         return self.call_rpc(method, data=data, stream=True)
 
     def lease_keep_alive_once(self, ID):

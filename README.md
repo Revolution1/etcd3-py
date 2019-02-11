@@ -29,6 +29,7 @@ Notice: The authentication header through gRPC-JSON-Gateway only supported in [e
     * [x] Watch
     * [x] Cluster
     * [x] Lease
+    * [x] Lock
     * [x] Maintenance
     * [x] Extra APIs
 * [x] stateful utilities
@@ -159,6 +160,9 @@ docker run -d \
 
 ## TODO
 
+- [ ] human friendly middle level apis
+- [ ] able to expose json or raw response to user
+- [ ] add election api
 - [ ] benchmark
 - [ ] python-etcd(etcd v2) compatible client
 - [ ] etcd browser

@@ -2,15 +2,17 @@
 asynchronous client
 """
 
-import aiohttp
 import json
-import six
 import ssl
 import warnings
+
+import aiohttp
+import six
 from aiohttp.client import _RequestContextManager
 
 from .baseclient import BaseClient
 from .baseclient import BaseModelizedStreamResponse
+from .baseclient import DEFAULT_VERSION
 from .errors import Etcd3Exception
 from .errors import Etcd3StreamError
 from .errors import get_client_error
@@ -18,7 +20,8 @@ from .utils import iter_json_string, Etcd3Warning
 
 
 class ModelizedResponse(object):
-    def __init__(self, method, resp, decode=True):
+    def __init__(self, client, method, resp, decode=True):
+        self.client = client
         self._coro = resp
         self._method = method
         self._resp = None
@@ -26,9 +29,9 @@ class ModelizedResponse(object):
 
     async def __modelize(self):
         self._resp = await self._coro
-        await AioClient._raise_for_status(self._resp)
+        await self.client._raise_for_status(self._resp)
         data = await self._resp.json()
-        return AioClient._modelizeResponseData(self._method, data, self._decode)
+        return self.client._modelizeResponseData(self._method, data, self._decode)
 
     def __await__(self):
         return self.__modelize().__await__()
@@ -39,10 +42,11 @@ class ModelizedStreamResponse(BaseModelizedStreamResponse):
     Model of a stream response
     """
 
-    def __init__(self, method, resp, decode=True):
+    def __init__(self, client, method, resp, decode=True):
         """
         :param resp: aiohttp.ClientResponse
         """
+        self.client = client
         self.resp = resp
         self.decode = decode
         self.method = method
@@ -75,17 +79,20 @@ class ModelizedStreamResponse(BaseModelizedStreamResponse):
     async def __anext__(self):
         if isinstance(self.resp, _RequestContextManager):
             self.resp = await self.resp
-            await AioClient._raise_for_status(self.resp)
+            await self.client._raise_for_status(self.resp)
         data = await self.resp_iter.next()
         data = json.loads(str(data, encoding='utf-8'))
         if data.get('error'):  # pragma: no cover
             # {"error":{"grpc_code":14,"http_code":503,"message":"rpc error: code = Unavailable desc = transport is closing","http_status":"Service Unavailable"}}
             err = data.get('error')
             raise get_client_error(err.get('message'), code=err.get('code'), status=err.get('http_code'))
-        return AioClient._modelizeResponseData(self.method, data, decode=self.decode)
+        r = self.client._modelizeResponseData(self.method, data, decode=self.decode)
+        if r.result:
+            r = r.result
+        return r
 
 
-class ResponseIter():
+class ResponseIter(object):
     """
     yield response content by every json object
     we don't yield by line, because the content of etcd's gRPC-JSON-Gateway stream response
@@ -126,14 +133,16 @@ class ResponseIter():
 
 
 class AioClient(BaseClient):
-    def __init__(self, host='localhost', port=2379, protocol='http',
+    def __init__(self, host='127.0.0.1', port=2379, protocol='http',
                  cert=(), verify=None,
                  timeout=None, headers=None, user_agent=None, pool_size=30,
-                 username=None, password=None, token=None):
+                 username=None, password=None, token=None,
+                 server_version=DEFAULT_VERSION, cluster_version=DEFAULT_VERSION):
         super(AioClient, self).__init__(host=host, port=port, protocol=protocol,
                                         cert=cert, verify=verify,
                                         timeout=timeout, headers=headers, user_agent=user_agent, pool_size=pool_size,
-                                        username=username, password=password, token=token)
+                                        username=username, password=password, token=token,
+                                        server_version=server_version, cluster_version=cluster_version)
         self.ssl_context = None
         if self.cert:
             if verify is False:
@@ -151,8 +160,7 @@ class AioClient(BaseClient):
             # the ssl problem is a pain in the ass, seems i can never get it right
             # https://github.com/requests/requests/issues/1847
             # https://stackoverflow.com/questions/44316292/ssl-sslerror-tlsv1-alert-protocol-version
-            self.ssl_context = ssl_context = ssl.SSLContext()
-            ssl_context.protocol = ssl.PROTOCOL_TLS
+            self.ssl_context = ssl_context = ssl.SSLContext(protocol=ssl.PROTOCOL_TLS)
             if not hasattr(ssl, 'PROTOCOL_TLSv1_1'):  # should support TLSv1.2 to pass the test
                 warnings.warn(Etcd3Warning("the openssl version of your python is too old to support TLSv1.1+,"
                                            "please upgrade you python"))
@@ -174,13 +182,11 @@ class AioClient(BaseClient):
     async def __aexit__(self, exc_type, exc_val, exc_tb):
         await self.close()
 
-    @classmethod
-    def _modelizeResponse(cls, method, resp, decode=True):
-        return ModelizedResponse(method, resp, decode)
+    def _modelizeResponse(self, method, resp, decode=True):
+        return ModelizedResponse(self, method, resp, decode)
 
-    @classmethod
-    def _modelizeStreamResponse(cls, method, resp, decode=True):
-        return ModelizedStreamResponse(method, resp, decode)
+    def _modelizeStreamResponse(self, method, resp, decode=True):
+        return ModelizedStreamResponse(self, method, resp, decode)
 
     def _get(self, url, **kwargs):
         r"""
@@ -212,7 +218,7 @@ class AioClient(BaseClient):
         try:
             data = await resp.json()
         except Exception:
-            error = resp.content
+            error = resp._content or resp.reason
             code = 2
         else:
             error = data.get('error')

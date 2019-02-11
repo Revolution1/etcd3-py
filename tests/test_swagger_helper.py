@@ -1,28 +1,24 @@
-import inspect
-import json
-import os
-
 from etcd3.models import AlarmRequestAlarmAction, etcdserverpbAlarmType
 from etcd3.swagger_helper import SwaggerSpec
+from etcd3.swaggerdefs import get_spec
 
-with open(os.path.join(os.path.dirname(inspect.getfile(SwaggerSpec)), 'rpc.swagger.json')) as f:
-    spec = json.load(f)
+spec = get_spec('3.3.0')
 sh = SwaggerSpec(spec)
 
 
 def test_swagger_helper():
     assert 'definitions' in dir(sh)
-    assert 'post' in dir(sh.paths['/v3alpha/auth/authenticate'])
+    assert 'post' in dir(sh.paths['/v3beta/auth/authenticate'])
     assert sh.swagger == spec['swagger']
-    assert repr(sh.paths['/v3alpha/auth/authenticate']).startswith('SwaggerPath')
-    assert sh.paths['/v3alpha/auth/authenticate']._ref == '#/paths/v3alpha_auth_authenticate'
-    assert sh.getPath('/v3alpha/auth/authenticate') == sh.paths['/v3alpha/auth/authenticate']
-    assert sh.paths.v3alpha_auth_authenticate.post.parameters[
-               0]._ref == '#/paths/v3alpha_auth_authenticate/post/parameters__0'
-    # assert sh.ref('#/paths/v3alpha_auth_authenticate/post/parameters__0') == sh.paths.v3alpha_auth_authenticate.post.parameters[0]
-    assert sh.paths.v3alpha_auth_authenticate.post.parameters[0].schema == sh.getSchema(
+    assert repr(sh.paths['/v3beta/auth/authenticate']).startswith('SwaggerPath')
+    assert sh.paths['/v3beta/auth/authenticate']._ref == '#/paths/v3beta_auth_authenticate'
+    assert sh.getPath('/v3beta/auth/authenticate') == sh.paths['/v3beta/auth/authenticate']
+    assert sh.paths.v3beta_auth_authenticate.post.parameters[
+               0]._ref == '#/paths/v3beta_auth_authenticate/post/parameters__0'
+    # assert sh.ref('#/paths/v3beta_auth_authenticate/post/parameters__0') == sh.paths.v3beta_auth_authenticate.post.parameters[0]
+    assert sh.paths.v3beta_auth_authenticate.post.parameters[0].schema == sh.getSchema(
         'etcdserverpbAuthenticateRequest')
-    assert sh.ref('#/paths/v3alpha_auth_disable/post/summary') == 'AuthDisable disables authentication.'
+    assert sh.ref('#/paths/v3beta_auth_disable/post/summary') == 'AuthDisable disables authentication.'
     assert sh.ref('#/definitions/etcdserverpbAlarmResponse').properties.alarms.type == 'array'
     assert sh.getSchema('etcdserverpbTxnResponse')._ref == '#/definitions/etcdserverpbTxnResponse'
     etcdserverpbDeleteRangeRequest = sh.getSchema('etcdserverpbDeleteRangeRequest')
@@ -63,4 +59,3 @@ def test_swagger_helper():
     assert modelized.header.raft_term == 2
     assert modelized.kvs[0].key == b'foo'
     assert modelized.kvs[0].value == b'bar'
-

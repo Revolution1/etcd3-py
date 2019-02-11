@@ -13,7 +13,7 @@ class AuthAPI(BaseAPI):
         :type password: str
         :param password: password of the user
         """
-        method = '/v3alpha/auth/authenticate'
+        method = '/auth/authenticate'
         data = {
             "name": name,
             "password": password
@@ -25,7 +25,7 @@ class AuthAPI(BaseAPI):
         AuthDisable disables authentication.
 
         """
-        method = '/v3alpha/auth/disable'
+        method = '/auth/disable'
         data = {}
         r = self.call_rpc(method, data=data)
         self.token = None  # clear local token
@@ -36,7 +36,7 @@ class AuthAPI(BaseAPI):
         AuthEnable enables authentication.
 
         """
-        method = '/v3alpha/auth/enable'
+        method = '/auth/enable'
         data = {}
         return self.call_rpc(method, data=data)
 
@@ -47,7 +47,7 @@ class AuthAPI(BaseAPI):
         :type name: str
         :param name: name is the name of the role to add to the authentication system.
         """
-        method = '/v3alpha/auth/role/add'
+        method = '/auth/role/add'
         data = {
             "name": name
         }
@@ -60,7 +60,7 @@ class AuthAPI(BaseAPI):
         :type role: str
         :param role: None
         """
-        method = '/v3alpha/auth/role/delete'
+        method = '/auth/role/delete'
         data = {
             "role": role
         }
@@ -73,7 +73,7 @@ class AuthAPI(BaseAPI):
         :type role: str
         :param role: None
         """
-        method = '/v3alpha/auth/role/get'
+        method = '/auth/role/get'
         data = {
             "role": role
         }
@@ -102,7 +102,7 @@ class AuthAPI(BaseAPI):
         :type all: bool
         :param all: all the keys [default: False]
         """
-        method = '/v3alpha/auth/role/grant'
+        method = '/auth/role/grant'
         if all:
             key = range_end = '\0'
         if prefix:
@@ -122,7 +122,7 @@ class AuthAPI(BaseAPI):
         """
         RoleList gets lists of all roles.
         """
-        method = '/v3alpha/auth/role/list'
+        method = '/auth/role/list'
         data = {}
         return self.call_rpc(method, data=data)
 
@@ -146,7 +146,7 @@ class AuthAPI(BaseAPI):
         :type all: bool
         :param all: all the keys [default: False]
         """
-        method = '/v3alpha/auth/role/revoke'
+        method = '/auth/role/revoke'
         if all:
             key = range_end = '\0'
         if prefix:
@@ -168,7 +168,7 @@ class AuthAPI(BaseAPI):
         :type password: str
         :param password: password of the user
         """
-        method = '/v3alpha/auth/user/add'
+        method = '/auth/user/add'
         data = {
             "name": name,
             "password": password
@@ -184,7 +184,7 @@ class AuthAPI(BaseAPI):
         :type password: str
         :param password: password is the new password for the user.
         """
-        method = '/v3alpha/auth/user/changepw'
+        method = '/auth/user/changepw'
         data = {
             "name": name,
             "password": password
@@ -198,7 +198,7 @@ class AuthAPI(BaseAPI):
         :type name: str
         :param name: name is the name of the user to delete.
         """
-        method = '/v3alpha/auth/user/delete'
+        method = '/auth/user/delete'
         data = {
             "name": name
         }
@@ -211,7 +211,7 @@ class AuthAPI(BaseAPI):
         :type name: str
         :param name: name is the name of the user to get.
         """
-        method = '/v3alpha/auth/user/get'
+        method = '/auth/user/get'
         data = {
             "name": name
         }
@@ -226,7 +226,7 @@ class AuthAPI(BaseAPI):
         :type role: str
         :param role: role is the name of the role to grant to the user.
         """
-        method = '/v3alpha/auth/user/grant'
+        method = '/auth/user/grant'
         data = {
             "user": user,
             "role": role
@@ -237,7 +237,7 @@ class AuthAPI(BaseAPI):
         """
         UserList gets a list of all users.
         """
-        method = '/v3alpha/auth/user/list'
+        method = '/auth/user/list'
         data = {}
         return self.call_rpc(method, data=data)
 
@@ -250,7 +250,7 @@ class AuthAPI(BaseAPI):
         :type role: str
         :param role: role name
         """
-        method = '/v3alpha/auth/user/revoke'
+        method = '/auth/user/revoke'
         data = {
             "name": name,
             "role": role

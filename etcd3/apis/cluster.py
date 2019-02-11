@@ -9,7 +9,7 @@ class ClusterAPI(BaseAPI):
         :type peerURLs: list of str
         :param peerURLs: peerURLs is the list of URLs the added member will use to communicate with the cluster.
         """
-        method = '/v3alpha/cluster/member/add'
+        method = '/cluster/member/add'
         data = {
             "peerURLs": peerURLs
         }
@@ -20,7 +20,7 @@ class ClusterAPI(BaseAPI):
         MemberList lists all the members in the cluster.
 
         """
-        method = '/v3alpha/cluster/member/list'
+        method = '/cluster/member/list'
         data = {}
         return self.call_rpc(method, data=data)
 
@@ -31,7 +31,7 @@ class ClusterAPI(BaseAPI):
         :type ID: int
         :param ID: ID is the member ID of the member to remove.
         """
-        method = '/v3alpha/cluster/member/remove'
+        method = '/cluster/member/remove'
         data = {
             "ID": ID
         }
@@ -46,7 +46,7 @@ class ClusterAPI(BaseAPI):
         :type peerURLs: list of str
         :param peerURLs: peerURLs is the new list of URLs the member will use to communicate with the cluster.
         """
-        method = '/v3alpha/cluster/member/update'
+        method = '/cluster/member/update'
         data = {
             "ID": ID,
             "peerURLs": peerURLs

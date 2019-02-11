@@ -5,6 +5,7 @@ language: python
 cache: pip
 
 python:
+#  - 3.7
   - 3.6
   - 3.5
   - 2.7
@@ -20,7 +21,7 @@ services:
 env:
   matrix:
     - ETCD_VER=v3.2.20
-    - ETCD_VER=v3.3.0
+#    - ETCD_VER=v3.3.0
 #    - ETCD_VER=v3.3.4
 #    - ETCD_VER=v3.3.7
 #    - ETCD_VER=v3.3.9

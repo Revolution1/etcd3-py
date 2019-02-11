@@ -70,7 +70,7 @@ async def test_async_client_auth(aio_client, request):
     # test client auth
     await aio_client.auth('root', 'root')
     assert aio_client.token
-    if re.match(r'v3\.[0-2]\.{0,1}', ETCD_VER):
+    if re.match(r'v?3\.[0-2]\.{0,1}', ETCD_VER):  # pragma: no cover
         logging.info('skipping tests of apis with auth enabled, cause etcd < v3.3.0 does not support auth header')
     else:
         assert await aio_client.user_get('root')

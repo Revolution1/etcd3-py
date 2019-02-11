@@ -1,18 +1,17 @@
-import time
-
-import logging
 import re
-import six
 import socket
 import threading
+import time
 from collections import deque
+
+import six
 from requests import ConnectionError
 from requests.exceptions import ChunkedEncodingError
 
 from ..models import EventEventType
 from ..utils import check_param
+from ..utils import log
 
-log = logging.getLogger('etcd3.Watch')
 EventType = EventEventType
 
 

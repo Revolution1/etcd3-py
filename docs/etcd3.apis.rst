@@ -38,6 +38,14 @@ etcd3\.apis\.lease
     :undoc-members:
     :show-inheritance:
 
+etcd3\.apis\.lock
+-------------------------
+
+.. automodule:: etcd3.apis.lock
+    :members:
+    :undoc-members:
+    :show-inheritance:
+
 etcd3\.apis\.maintenance
 -------------------------------
 

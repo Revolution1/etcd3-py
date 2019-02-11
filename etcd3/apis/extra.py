@@ -14,7 +14,7 @@ class ExtraAPI(BaseAPI):
 
         :return: EtcdVersion
         """
-        resp = self._get(self._url('/version'), headers=self.headers)
+        resp = self._get(self._url('/version', prefix=False), headers=self.headers)
         self._raise_for_status(resp)
         return EtcdVersion(**resp.json())
 
@@ -24,7 +24,7 @@ class ExtraAPI(BaseAPI):
 
         :return: EtcdVersion
         """
-        resp = self._get(self._url('/health'), headers=self.headers)
+        resp = self._get(self._url('/health', prefix=False), headers=self.headers)
         self._raise_for_status(resp)
         return resp.json()['health']
 
@@ -34,7 +34,7 @@ class ExtraAPI(BaseAPI):
 
         :return: str
         """
-        resp = self._get(self._url('/metrics'), headers=self.headers)
+        resp = self._get(self._url('/metrics', prefix=False), headers=self.headers)
         self._raise_for_status(resp)
         metrics = resp.content
         if not isinstance(metrics, six.text_type):

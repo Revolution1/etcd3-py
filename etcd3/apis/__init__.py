@@ -17,6 +17,6 @@ __all__ = [
     'KVAPI',
     'MaintenanceAPI',
     'LeaseAPI',
-    'BaseAPI'
+    'BaseAPI',
     'LockAPI'
 ]

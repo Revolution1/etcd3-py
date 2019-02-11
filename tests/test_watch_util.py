@@ -41,6 +41,7 @@ def test_watcher(client):
 
     w.runDaemon()
     time.sleep(0.2)
+    live = w._thread.is_alive()
 
     with pytest.raises(RuntimeError):
         w.runDaemon()
