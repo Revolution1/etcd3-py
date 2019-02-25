@@ -145,7 +145,10 @@ class EtcdTestCluster:
                          '--initial-cluster', initial_cluster,
                          ] + ssl_opts,
                 ports={'2379/tcp': None},
-                volumes={CERTS_DIR: {'bind': '/certs', 'mode': 'ro'}},
+                volumes={
+                    CERTS_DIR: {'bind': '/certs', 'mode': 'ro'},
+                    "/tmp/shared": {'bind': '/tmp/shared', 'mode': 'rw'},
+                    },
                 network=self.network.name,
             )
             for i in range(self.size)]

@@ -41,8 +41,8 @@ def test_snapshot(client, etcd_cluster):
     etcd_cluster.etcdctl('defrag')
 
     r = client.snapshot()
-    with open('/tmp/etcd-snap.db', 'wb') as f:
+    with open('/tmp/shared/etcd-snap.db', 'wb') as f:
         for i in r:
             assert i.blob
             f.write(i.blob)
-    assert etcd_cluster.etcdctl('snapshot status /tmp/etcd-snap.db')
+    assert etcd_cluster.etcdctl('snapshot status /tmp/shared/etcd-snap.db')
