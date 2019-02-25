@@ -13,6 +13,7 @@ def etcd_cluster(request):
         cluster.down()
     request.addfinalizer(fin)
     cluster.up()
+    cluster.wait_ready()
 
     return cluster
 
@@ -27,6 +28,7 @@ def etcd_cluster_ssl(request):
         cluster.down()
     request.addfinalizer(fin)
     cluster.up()
+    cluster.wait_ready()
 
     return cluster
 
