@@ -97,7 +97,7 @@ class EtcdTestCluster:
         self.containers = [
             self.client.containers.create(
                 name="etcd%s-%s" % (i, self.ident),
-                image='quay.io/coreos/etcd:v3.3.11',
+                image=ETCD_IMG,
                 environment={
                     'ETCDCTL_API': '3',
                 },
