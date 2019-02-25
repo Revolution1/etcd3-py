@@ -125,7 +125,6 @@ class BaseClient(AuthAPI, ClusterAPI, KVAPI, LeaseAPI, MaintenanceAPI,
         self._get_prefix()
         self.api_spec = SwaggerSpec(get_spec(self.server_version))
 
-    @retry_all_hosts
     def _retrieve_version(self):  # pragma: no cover
         try:
             import requests
