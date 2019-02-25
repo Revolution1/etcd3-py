@@ -7,6 +7,7 @@ from .envs import SERVER_CA_PATH
 from .envs import SERVER_CERT_PATH
 from .envs import SERVER_KEY_PATH
 from time import sleep
+import copy
 import logging
 
 log = logging.getLogger(__name__)
@@ -21,9 +22,25 @@ class EtcdTestCluster:
         self.ssl = ssl
         self.client = docker.from_env()
 
-    def etcdctl(self, command, container_idx=0):
-        return self.containers[container_idx].exec_run(
-            '%s %s' % (self.etcdctl_command(), command)).output
+    def etcdctl(self, command, container_idx=None):
+        if container_idx:
+            exec_containers = [self.containers[container_idx]]
+        else:
+            exec_containers = copy.copy(self.containers)
+        cmd = '%s %s' % (self.etcdctl_command(), command)
+        for c in exec_containers:
+            try:
+                out = c.exec_run(cmd)
+                if out.exit_code != 0:
+                    log.warning('executing etcdctl command on %s returned %s' %
+                                (cmd, out))
+                    continue
+                return out.output
+            except Exception as e:
+                log.warn('error executing etcdctl command %s on %s: %s' %
+                         (cmd, c.name, e))
+        raise Exception("error executing etcdctl command %s on all containers" %
+                        cmd)
 
     def etcdctl_command(self):
         command = "etcdctl"
