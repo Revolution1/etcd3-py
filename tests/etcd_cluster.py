@@ -9,6 +9,7 @@ from .envs import SERVER_KEY_PATH
 from time import sleep
 import copy
 import logging
+import six
 
 log = logging.getLogger(__name__)
 
@@ -53,18 +54,33 @@ class EtcdTestCluster:
 
     def is_container_ready(self, container):
         try:
-            command = '%s member list' % self.etcdctl_command()
-            container.exec_run(command)
+            command = '%s endpoint status' % self.etcdctl_command()
+            out = container.exec_run(command)
+            if out.exit_code != 0:
+                return False
             return True
         except Exception:
-            log.exception('a')
             sleep(1)
             return False
 
-    def wait_ready(self, container):
+    def wait_container_ready(self, container):
         while not self.is_container_ready(container):
-            sleep(1)
-        sleep(1)
+            sleep(0.5)
+        idx = self.containers.index(container)
+        # log.error(self.etcdctl("endpoint status"))
+        sleep(0.5)
+
+    def wait_ready(self):
+        while True:
+            sleep(0.5)
+            out = self.etcdctl('version')
+            if six.PY3:  # pragma: no cover
+                out = six.text_type(out, encoding='utf-8')
+            if 'not_decided' in out:
+                continue
+            out = self.etcdctl('member list')
+            if len([x for x in out.splitlines() if b'started' in x]) == self.size:
+                return
 
     def get_endpoints(self):
         for c in self.containers:
@@ -73,6 +89,12 @@ class EtcdTestCluster:
             DOCKER_PUBLISH_HOST,
             c.attrs['NetworkSettings']['Ports']['2379/tcp'][0]['HostPort'])
             for c in self.containers]
+
+    def get_endpoints_param(self):
+        addresses = [
+            c.attrs['NetworkSettings']['Networks']["etcd-%s" % self.ident]['IPAddress']
+            for c in self.containers]
+        return "--endpoints=%s" % ",".join(["%s:2379" % a for a in addresses])
 
     def down(self):
         for c in self.containers:
@@ -85,7 +107,7 @@ class EtcdTestCluster:
             log.info('killing container %s' % c.name)
             c.kill()
             log.info('waiting for container %s to be ready' % c.name)
-            self.wait_ready(c)
+            self.wait_container_ready(c)
 
     def up(self):
         self.network = self.client.networks.create(name="etcd-%s" % self.ident)
@@ -132,5 +154,5 @@ class EtcdTestCluster:
             c.start()
         for c in self.containers:
             log.debug('wait for container %s to be ready' % c.name)
-            self.wait_ready(c)
+            self.wait_container_ready(c)
             c.reload()
