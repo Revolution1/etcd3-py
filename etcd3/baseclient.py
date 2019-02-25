@@ -17,6 +17,7 @@ from .apis import LockAPI
 from .apis import MaintenanceAPI
 from .apis import WatchAPI
 from .errors import UnsupportedServerVersion
+from .errors import Etcd3Exception
 from .stateful import Lease
 from .stateful import Lock
 from .stateful import Txn
@@ -25,6 +26,8 @@ from .swagger_helper import SwaggerSpec
 from .swaggerdefs import get_spec
 from .utils import Etcd3Warning
 from .utils import log
+from .utils import check_param
+from .utils import EtcdEndpoint
 from .version import __version__
 
 
@@ -48,15 +51,54 @@ class BaseModelizedStreamResponse(object):  # pragma: no cover
 DEFAULT_VERSION = '3.3.0'
 
 
+def retry_all_hosts(func):
+    def wrapper(self, *args, **kwargs):
+        errors = []
+        got_result = False
+        for i in range(len(self.endpoints)):
+            endpoint = self.endpoints.pop(0)
+            self.endpoints.append(endpoint)
+            self.host = endpoint.host
+            self.port = endpoint.port
+            try:
+                ret = func(self, *args, **kwargs)
+                got_result = True
+                break
+            except Exception as e:
+                errors.append(e)
+                log.warning('Failed to call %s(args: %s, kwargs: %s) on '
+                            'endpoint %s' %
+                            (func.__name__, args, kwargs, endpoint))
+        if not got_result:
+            exception_types = [x.__class__ for x in errors]
+            if len(set(exception_types)) == 1:
+                log.error('Failed to call %s(args: %s, kwargs: %s) on all '
+                          'endpoints: %s. Got errors: %s' %
+                          (func.__name__, args, kwargs, self.endpoints, errors))
+                raise errors[0]
+            else:
+                raise Etcd3Exception(
+                    'Failed to call %s(args: %s, kwargs: %s) on all '
+                    'endpoints: %s. Got errors: %s' %
+                    (func.__name__, args, kwargs, self.endpoints, errors))
+        # elif len(errors) > 0:
+            # log.warning('Got errors %s, retried successfully')
+        return ret
+    return wrapper
+
+
 class BaseClient(AuthAPI, ClusterAPI, KVAPI, LeaseAPI, MaintenanceAPI,
                  WatchAPI, ExtraAPI, LockAPI):
-    def __init__(self, host='127.0.0.1', port=2379, protocol='http',
-                 cert=(), verify=None,
-                 timeout=None, headers=None, user_agent=None, pool_size=30,
+    @check_param(at_most_one_of=['port', 'endpoints'], at_least_one_of=['port', 'endpoints'])
+    @check_param(at_most_one_of=['host', 'endpoints'], at_least_one_of=['host', 'endpoints'])
+    def __init__(self, host=None, port=None, endpoints=None, protocol='http', cert=(),
+                 verify=None, timeout=None, headers=None, user_agent=None, pool_size=30,
                  username=None, password=None, token=None,
                  server_version=DEFAULT_VERSION, cluster_version=DEFAULT_VERSION):
-        self.host = host
-        self.port = port
+        if host is not None:
+            self.endpoints = ([EtcdEndpoint(host, port)])
+        else:
+            self.endpoints = endpoints
         self.cert = cert
         self.protocol = protocol
         if cert:
@@ -79,6 +121,7 @@ class BaseClient(AuthAPI, ClusterAPI, KVAPI, LeaseAPI, MaintenanceAPI,
         self._get_prefix()
         self.api_spec = SwaggerSpec(get_spec(self.server_version))
 
+    @retry_all_hosts
     def _retrieve_version(self):  # pragma: no cover
         try:
             import requests

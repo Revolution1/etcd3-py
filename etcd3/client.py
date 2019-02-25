@@ -8,6 +8,7 @@ import requests
 import six
 
 from .baseclient import BaseClient
+from .baseclient import retry_all_hosts
 from .baseclient import BaseModelizedStreamResponse
 from .baseclient import DEFAULT_VERSION
 from .errors import Etcd3Exception
@@ -86,8 +87,8 @@ def iter_response(resp):
 
 
 class Client(BaseClient):
-    def __init__(self, host='127.0.0.1', port=2379, protocol='http',
-                 cert=(), verify=None,
+    def __init__(self, host=None, port=None, endpoints=None,
+                 protocol='http', cert=(), verify=None,
                  timeout=None, headers=None, user_agent=None, pool_size=30,
                  username=None, password=None, token=None, max_retries=0,
                  server_version=DEFAULT_VERSION, cluster_version=DEFAULT_VERSION):
@@ -100,11 +101,12 @@ class Client(BaseClient):
             which we retry a request, import urllib3's ``Retry`` class and pass
             that instead.
         """
-        super(Client, self).__init__(host=host, port=port, protocol=protocol,
-                                     cert=cert, verify=verify,
-                                     timeout=timeout, headers=headers, user_agent=user_agent, pool_size=pool_size,
-                                     username=username, password=password, token=token,
-                                     server_version=server_version, cluster_version=cluster_version)
+        super(Client, self).__init__(
+            host=host, port=port, endpoints=endpoints, protocol=protocol,
+            cert=cert, verify=verify, timeout=timeout, headers=headers,
+            user_agent=user_agent, pool_size=pool_size,
+            username=username, password=password, token=token,
+            server_version=server_version, cluster_version=cluster_version)
         self._session = requests.session()
         self._session.cert = self.cert
         self._session.verify = self.verify
@@ -164,6 +166,7 @@ class Client(BaseClient):
         """
         return self._session.post(url, data=data, json=json, **kwargs)
 
+    @retry_all_hosts
     def call_rpc(self, method, data=None, stream=False, encode=True, raw=False, **kwargs):  # TODO: add modelize param
         """
         call ETCDv3 RPC and return response object

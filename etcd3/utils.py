@@ -382,3 +382,12 @@ def find_executable(executable, path=None):  # pragma: no cover
             f = os.path.join(p, execname)
             if os.path.isfile(f):
                 return f
+
+
+class EtcdEndpoint():
+    def __init__(self, host='127.0.0.1', port=2379):
+        self.host = host
+        self.port = port
+
+    def __repr__(self):
+        return "EtcdEndpoint(host=%s, port=%s)" % (self.host, self.port)
