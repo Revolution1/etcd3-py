@@ -1,39 +1,23 @@
-import time
-
 import pytest
-
-from etcd3.client import Client
 from etcd3.errors import Etcd3Exception
-from .docker_cli import CA_PATH, CERT_PATH, KEY_PATH, NO_DOCKER_SERVICE, docker_run_etcd_main
-from .docker_cli import docker_run_etcd_ssl, docker_rm_etcd_ssl
-from .envs import protocol, host
-from .etcd_go_cli import etcdctl, NO_ETCD_SERVICE
+from etcd3 import Client
+from .envs import CA_PATH, CERT_PATH, KEY_PATH
+from .envs import NO_DOCKER_SERVICE
 from .mocks import fake_request
 
 
-@pytest.fixture(scope='module')
-def client():
-    """
-    init Etcd3Client, close its connection-pool when teardown
-    """
-    _, p, _ = docker_run_etcd_main()
-    c = Client(host, p, protocol)
-    yield c
-    c.close()
-
-
-@pytest.mark.skipif(NO_ETCD_SERVICE, reason="no etcd service available")
-def test_request_and_model(client):
-    etcdctl('put test_key test_value')
+@pytest.mark.skipif(NO_DOCKER_SERVICE, reason="no docker service available")
+def test_request_and_model(client, etcd_cluster):
+    etcd_cluster.etcdctl('put test_key test_value')
     result = client.call_rpc('/kv/range', {'key': 'test_key'})
     # {"header":{"cluster_id":11588568905070377092,"member_id":128088275939295631,"revision":3,"raft_term":2},"kvs":[{"key":"dGVzdF9rZXk=","create_revision":3,"mod_revision":3,"version":1,"value":"dGVzdF92YWx1ZQ=="}],"count":1}'
     assert result.kvs[0].key == b'test_key'
     assert result.kvs[0].value == b'test_value'
-    etcdctl('del test_key')
+    etcd_cluster.etcdctl('del test_key')
 
 
-@pytest.mark.skipif(NO_ETCD_SERVICE, reason="no etcd service available")
-def test_stream(client):
+@pytest.mark.skipif(NO_DOCKER_SERVICE, reason="no docker service available")
+def test_stream(client, etcd_cluster):
     times = 20
     created = False
     with client.call_rpc('/watch', {'create_request': {'key': 'test_key'}}, stream=True) as r:
@@ -43,14 +27,14 @@ def test_stream(client):
             if not created:
                 created = i.created
                 assert created
-            etcdctl('put test_key test_value')
+            etcd_cluster.etcdctl('put test_key test_value')
             if i.events:
                 assert i.events[0].kv.key == b'test_key'
                 assert i.events[0].kv.value == b'test_value'
                 times -= 1
 
 
-@pytest.mark.skipif(NO_ETCD_SERVICE, reason="no etcd service available")
+@pytest.mark.skipif(NO_DOCKER_SERVICE, reason="no docker service available")
 def test_request_exception(client):
     with pytest.raises(Etcd3Exception, match=r".*'Not Found'.*"):
         client.call_rpc('/kv/rag', {})  # non exist path
@@ -99,10 +83,15 @@ def test_patched_request_exception(client, monkeypatch):
 
 
 @pytest.mark.skipif(NO_DOCKER_SERVICE, reason="no docker service available")
-def test_client_ssl():
-    docker_rm_etcd_ssl()
-    _, port, _ = docker_run_etcd_ssl()
-    time.sleep(2)
-    client = Client(host, port, cert=(CERT_PATH, KEY_PATH), verify=CA_PATH)
+def test_client_ssl(etcd_cluster_ssl):
+    client = Client(endpoints=etcd_cluster_ssl.get_endpoints(),
+                    cert=(CERT_PATH, KEY_PATH), verify=CA_PATH)
     assert client.version()
-    docker_rm_etcd_ssl()
+
+
+@pytest.mark.skipif(NO_DOCKER_SERVICE, reason="no docker service available")
+def test_client_host_port(etcd_cluster_ssl):
+    endpoint = etcd_cluster_ssl.get_endpoints()[0]
+    client = Client(host=endpoint.host, port=endpoint.port,
+                    cert=(CERT_PATH, KEY_PATH), verify=CA_PATH)
+    assert client.version()

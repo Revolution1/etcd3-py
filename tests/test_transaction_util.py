@@ -1,26 +1,12 @@
 import pytest
 
-from etcd3 import Client
-from tests.docker_cli import docker_run_etcd_main
-from .envs import protocol, host
-from .etcd_go_cli import etcdctl, NO_ETCD_SERVICE
-
-
-@pytest.fixture(scope='module')
-def client():
-    """
-    init Etcd3Client, close its connection-pool when teardown
-    """
-    _, p, _ = docker_run_etcd_main()
-    c = Client(host, p, protocol)
-    yield c
-    c.close()
+from .envs import NO_DOCKER_SERVICE
 
 
 @pytest.mark.timeout(60)
-@pytest.mark.skipif(NO_ETCD_SERVICE, reason="no etcd service available")
-def test_transaction(client):
-    etcdctl('put foo bar')
+@pytest.mark.skipif(NO_DOCKER_SERVICE, reason="no docker service available")
+def test_transaction(client, etcd_cluster):
+    etcd_cluster.etcdctl('put foo bar')
     txn = client.Txn()
     txn.compare(txn.key('foo').value == 'bar')
     txn.success(txn.put('foo', 'bra'))
@@ -35,7 +21,7 @@ def test_transaction(client):
     txn.commit()
     assert client.range('foo').kvs[0].value == b'bar'
 
-    etcdctl('put foo 2')
+    etcd_cluster.etcdctl('put foo 2')
     txn = client.Txn()
     txn.If(txn.key('foo').value > b'1')
     txn.If(txn.key('foo').value < b'3')
@@ -45,8 +31,8 @@ def test_transaction(client):
     assert r.succeeded
     assert client.range('foo').kvs[0].value == b'bra'
 
-    etcdctl('put foo bar')
-    etcdctl('put fizz buzz')
+    etcd_cluster.etcdctl('put foo bar')
+    etcd_cluster.etcdctl('put fizz buzz')
     txn = client.Txn()
     txn.success(txn.range('foo'))
     txn.success(txn.delete('fizz'))

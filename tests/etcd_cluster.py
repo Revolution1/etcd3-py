@@ -1,0 +1,119 @@
+import docker
+from etcd3.utils import EtcdEndpoint
+from .envs import ETCD_IMG
+from .envs import DOCKER_PUBLISH_HOST
+from .envs import CERTS_DIR
+from .envs import SERVER_CA_PATH
+from .envs import SERVER_CERT_PATH
+from .envs import SERVER_KEY_PATH
+from time import sleep
+import logging
+
+log = logging.getLogger(__name__)
+
+
+class EtcdTestCluster:
+    def __init__(self, ident, size, ssl=False):
+        self.containers = []
+        self.network = None
+        self.ident = ident
+        self.size = size
+        self.ssl = ssl
+        self.client = docker.from_env()
+
+    def etcdctl(self, command, container_idx=0):
+        return self.containers[container_idx].exec_run(
+            '%s %s' % (self.etcdctl_command(), command)).output
+
+    def etcdctl_command(self):
+        command = "etcdctl"
+        if self.ssl:
+            command += " --key /certs/client-key.pem"
+            command += " --cert /certs/client.pem"
+            command += " --endpoints=https://127.0.0.1:2379"
+            command += " --insecure-skip-tls-verify"
+        return command
+
+    def is_container_ready(self, container):
+        try:
+            command = '%s member list' % self.etcdctl_command()
+            container.exec_run(command)
+            return True
+        except Exception:
+            log.exception('a')
+            sleep(1)
+            return False
+
+    def wait_ready(self, container):
+        while not self.is_container_ready(container):
+            sleep(1)
+        sleep(1)
+
+    def get_endpoints(self):
+        for c in self.containers:
+            c.reload()
+        return [EtcdEndpoint(
+            DOCKER_PUBLISH_HOST,
+            c.attrs['NetworkSettings']['Ports']['2379/tcp'][0]['HostPort'])
+            for c in self.containers]
+
+    def down(self):
+        for c in self.containers:
+            c.remove(force=True)
+        if self.network:
+            self.network.remove()
+
+    def rolling_restart(self):
+        for c in self.containers:
+            log.info('killing container %s' % c.name)
+            c.kill()
+            log.info('waiting for container %s to be ready' % c.name)
+            self.wait_ready(c)
+
+    def up(self):
+        self.network = self.client.networks.create(name="etcd-%s" % self.ident)
+        image_found = False
+        for image in self.client.images.list():
+            if ETCD_IMG in image.tags:
+                image_found = True
+        if not image_found:
+            log.info('pulling image %s' % ETCD_IMG)
+            self.client.images.pull(ETCD_IMG)
+        initial_cluster = ','.join(
+            ["etcd{x}-{n}=http://etcd{x}-{n}:2380".format(n=self.ident, x=x)
+             for x in range(self.size)])
+        if self.ssl:
+            ssl_opts = [
+                '--client-cert-auth',
+                '--cert-file=%s' % SERVER_CERT_PATH,
+                '--key-file=%s' % SERVER_KEY_PATH,
+                '--trusted-ca-file=%s' % SERVER_CA_PATH,
+                '--listen-client-urls=https://0.0.0.0:2379',
+                '--advertise-client-urls=https://0.0.0.0:2379']
+        else:
+            ssl_opts = [
+                '--listen-client-urls=http://0.0.0.0:2379',
+                '--advertise-client-urls=http://0.0.0.0:2379']
+        self.containers = [
+            self.client.containers.create(
+                name="etcd%s-%s" % (i, self.ident),
+                image='quay.io/coreos/etcd:v3.3.11',
+                environment={
+                    'ETCDCTL_API': '3',
+                },
+                command=['etcd', '--name=etcd%s-%s' % (i, self.ident),
+                         '--listen-peer-urls=http://0.0.0.0:2380',
+                         '--initial-cluster', initial_cluster,
+                         ] + ssl_opts,
+                ports={'2379/tcp': None},
+                volumes={CERTS_DIR: {'bind': '/certs', 'mode': 'ro'}},
+                network=self.network.name,
+            )
+            for i in range(self.size)]
+        for c in self.containers:
+            log.debug('starting container %s' % c.name)
+            c.start()
+        for c in self.containers:
+            log.debug('wait for container %s to be ready' % c.name)
+            self.wait_ready(c)
+            c.reload()

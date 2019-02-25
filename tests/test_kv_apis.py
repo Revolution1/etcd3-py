@@ -2,39 +2,20 @@ import json
 import pytest
 import six
 
-from etcd3.client import Client
 from etcd3.models import RangeRequestSortOrder
 from etcd3.models import RangeRequestSortTarget
-from tests.docker_cli import docker_run_etcd_main
-from .envs import protocol, host
-from .etcd_go_cli import NO_ETCD_SERVICE
-from .etcd_go_cli import etcdctl
+from .envs import NO_DOCKER_SERVICE
 
 
-@pytest.fixture(scope='module')
-def client():
-    """
-    init Etcd3Client, close its connection-pool when teardown
-    """
-    _, p, _ = docker_run_etcd_main()
-    c = Client(host, p, protocol)
-    yield c
-    c.close()
-
-
-def clear():
-    etcdctl('del', '--from-key', '')
-
-
-@pytest.mark.skipif(NO_ETCD_SERVICE, reason="no etcd service available")
-def test_range(client, request):
+@pytest.mark.skipif(NO_DOCKER_SERVICE, reason="no docker service available")
+def test_range(client, etcd_cluster, clear, request):
     clear()
     request.addfinalizer(clear)
 
     # test get
-    etcdctl('put /foo1 v2')
+    etcd_cluster.etcdctl('put /foo1 v2')
     assert client.range('/foo1').kvs[0].value == b'v2'
-    etcdctl('put /foo2 v1')
+    etcd_cluster.etcdctl('put /foo2 v1')
     assert client.range('/foo2').kvs[0].value == b'v1'
 
     # test prefix and sort
@@ -50,7 +31,7 @@ def test_range(client, request):
     assert r.kvs[1].key == b'/foo2'
 
     # test all
-    etcdctl('put some_key_else v')
+    etcd_cluster.etcdctl('put some_key_else v')
     r = client.range(all=True)
     assert len(r.kvs) >= 3
 
@@ -59,8 +40,8 @@ def test_range(client, request):
     assert len(r.kvs) == 2
 
 
-@pytest.mark.skipif(NO_ETCD_SERVICE, reason="no etcd service available")
-def test_put(client, request):
+@pytest.mark.skipif(NO_DOCKER_SERVICE, reason="no docker service available")
+def test_put(client, clear, request):
     clear()
     request.addfinalizer(clear)
     client.put('foo', 'bar')
@@ -69,8 +50,8 @@ def test_put(client, request):
     assert client.range('foo').kvs[0].value == b'bra'
 
 
-@pytest.mark.skipif(NO_ETCD_SERVICE, reason="no etcd service available")
-def test_delete(client, request):
+@pytest.mark.skipif(NO_DOCKER_SERVICE, reason="no docker service available")
+def test_delete(client, clear, request):
     clear()
     request.addfinalizer(clear)
     client.put('foo', 'bar')
@@ -80,22 +61,22 @@ def test_delete(client, request):
     assert not client.range('fo', prefix=True).kvs
 
 
-@pytest.mark.skipif(NO_ETCD_SERVICE, reason="no etcd service available")
-def test_compact(client, request):
-    out = etcdctl('put some thing', json=True)
+@pytest.mark.skipif(NO_DOCKER_SERVICE, reason="no docker service available")
+def test_compact(client, etcd_cluster, request):
+    out = etcd_cluster.etcdctl('-w json put some thing')
     if six.PY3:  # pragma: no cover
         out = six.text_type(out, encoding='utf-8')
     rev = json.loads(out)['header']['revision']
     assert client.compact(rev, physical=False)
 
 
-@pytest.mark.skipif(NO_ETCD_SERVICE, reason="no etcd service available")
-def test_txn(client, request):
+@pytest.mark.skipif(NO_DOCKER_SERVICE, reason="no docker service available")
+def test_txn(client, etcd_cluster, clear, request):
     clear()
     request.addfinalizer(clear)
-    etcdctl('put flag ok')
-    etcdctl('put foo bar')
-    etcdctl('put fizz buzz')
+    etcd_cluster.etcdctl('put flag ok')
+    etcd_cluster.etcdctl('put foo bar')
+    etcd_cluster.etcdctl('put fizz buzz')
 
     compare = [{
         "result": "EQUAL",
@@ -118,9 +99,9 @@ def test_txn(client, request):
     assert not client.range('fizz').kvs
     assert client.range('foo').kvs[0].value == b'bra'
 
-    etcdctl('put flag ok')
-    etcdctl('put foo bar')
-    etcdctl('put fizz buzz')
+    etcd_cluster.etcdctl('put flag ok')
+    etcd_cluster.etcdctl('put foo bar')
+    etcd_cluster.etcdctl('put fizz buzz')
 
     compare = [{
         "result": "EQUAL",

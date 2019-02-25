@@ -3,21 +3,7 @@ from threading import Thread
 
 import pytest
 
-from etcd3.client import Client
-from tests.docker_cli import docker_run_etcd_main
-from .envs import protocol, host
-from .etcd_go_cli import NO_ETCD_SERVICE, etcdctl
-
-
-@pytest.fixture(scope='module')
-def client():
-    """
-    init Etcd3Client, close its connection-pool when teardown
-    """
-    _, p, _ = docker_run_etcd_main()
-    c = Client(host, p, protocol)
-    yield c
-    c.close()
+from .envs import NO_DOCKER_SERVICE
 
 
 class context:
@@ -25,16 +11,12 @@ class context:
         self.exit = False
 
 
-def clear():
-    etcdctl('del', '--from-key', '')
-
-
 KEY = 'test-lock'
 
 
 @pytest.mark.timeout(60)
-@pytest.mark.skipif(NO_ETCD_SERVICE, reason="no etcd service available")
-def test_lock_flow(client):
+@pytest.mark.skipif(NO_DOCKER_SERVICE, reason="no docker service available")
+def test_lock_flow(client, clear):
     clear()
     holds = {}
 

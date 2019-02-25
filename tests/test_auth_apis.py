@@ -3,53 +3,22 @@ import re
 
 import pytest
 
-from etcd3.client import Client
 from etcd3.errors import ErrAuthNotEnabled
 from etcd3.errors import ErrRoleNotFound
 from etcd3.errors import ErrRootUserNotExist
 from etcd3.errors import ErrUserNotFound
 from etcd3.models import authpbPermissionType
 from etcd3.utils import incr_last_byte
-from tests.docker_cli import docker_run_etcd_main
-from .envs import protocol, host, ETCD_VER
-from .etcd_go_cli import etcdctl, NO_ETCD_SERVICE
+from .envs import ETCD_VER
+from .envs import NO_DOCKER_SERVICE
+from .conftest import teardown_auth
 
 
-@pytest.fixture(scope='module')
-def client():
-    """
-    init Etcd3Client, close its connection-pool when teardown
-    """
-    _, p, _ = docker_run_etcd_main()
-    c = Client(host, p, protocol)
-    yield c
-    c.close()
-
-
-def teardown_auth(client):  # pragma: no cover
-    """
-    disable auth, delete all users and roles
-    """
-    etcdctl('--user root:root auth disable', raise_error=False, endpoint=client.baseurl)
-    etcdctl('--user root:changed auth disable', raise_error=False, endpoint=client.baseurl)
-    for i in (etcdctl('role list', raise_error=False, endpoint=client.baseurl) or '').splitlines():
-        etcdctl('role', 'delete', i, endpoint=client.baseurl)
-    for i in (etcdctl('user list', raise_error=False, endpoint=client.baseurl) or '').splitlines():
-        etcdctl('user', 'delete', i, endpoint=client.baseurl)
-
-
-def enable_auth():  # pragma: no cover
-    etcdctl('user add root:root')
-    etcdctl('role add root')
-    etcdctl('user grant root root')
-    etcdctl('auth enable')
-
-
-@pytest.mark.skipif(NO_ETCD_SERVICE, reason="no etcd service available")
+@pytest.mark.skipif(NO_DOCKER_SERVICE, reason="no docker service available")
 # @pytest.mark.skipif(re.match(r'v3\.[0-2]\.{0,1}', ETCD_VER), reason="etcd < v3.3.0 does not support auth header")
-def test_auth_flow(client, request):
-    teardown_auth(client)
-    request.addfinalizer(lambda: teardown_auth(client))
+def test_auth_flow(client, etcd_cluster, request):
+    teardown_auth(etcd_cluster)
+    request.addfinalizer(lambda: teardown_auth(etcd_cluster))
 
     # test error
     with pytest.raises(ErrRootUserNotExist):
