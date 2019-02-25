@@ -1,3 +1,4 @@
+import six
 from etcd3.client import Client
 import pytest
 from .etcd_cluster import EtcdTestCluster
@@ -59,8 +60,12 @@ def teardown_auth(etcd_cluster):  # pragma: no cover
     etcd_cluster.etcdctl('--user root:root auth disable')
     etcd_cluster.etcdctl('--user root:changed auth disable')
     for i in (etcd_cluster.etcdctl('role list') or '').splitlines():
+        if six.PY3:  # pragma: no cover
+            i = six.text_type(i, encoding='utf-8')
         etcd_cluster.etcdctl('role delete %s' % i)
     for i in (etcd_cluster.etcdctl('user list') or '').splitlines():
+        if six.PY3:  # pragma: no cover
+            i = six.text_type(i, encoding='utf-8')
         etcd_cluster.etcdctl('user delete %s' % i)
 
 
