@@ -7,6 +7,7 @@ import warnings
 
 import semantic_version as sem
 from six.moves import urllib_parse
+import copy
 
 from .apis import AuthAPI
 from .apis import ClusterAPI
@@ -55,11 +56,12 @@ def retry_all_hosts(func):
     def wrapper(self, *args, **kwargs):
         errors = []
         got_result = False
-        retries = len(self.endpoints)
+        call_endpoints = copy.copy(self.endpoints)
+        retries = len(call_endpoints)
         while retries > 0:
             retries -= 1
-            endpoint = self.endpoints.pop(0)
-            self.endpoints.append(endpoint)
+            endpoint = call_endpoints.pop(0)
+            call_endpoints.append(endpoint)
             self.host = endpoint.host
             self.port = endpoint.port
             try:
@@ -69,20 +71,20 @@ def retry_all_hosts(func):
             except Exception as e:
                 errors.append(e)
                 log.warning('Failed to call %s(args: %s, kwargs: %s) on '
-                            'endpoint %s' %
-                            (func.__name__, args, kwargs, endpoint))
+                            'endpoint %s (%s)' %
+                            (func.__name__, args, kwargs, endpoint, e))
         if not got_result:
             exception_types = [x.__class__ for x in errors]
             if len(set(exception_types)) == 1:
                 log.error('Failed to call %s(args: %s, kwargs: %s) on all '
                           'endpoints: %s. Got errors: %s' %
-                          (func.__name__, args, kwargs, self.endpoints, errors))
+                          (func.__name__, args, kwargs, call_endpoints, errors))
                 raise errors[0]
             else:
                 raise Etcd3Exception(
                     'Failed to call %s(args: %s, kwargs: %s) on all '
                     'endpoints: %s. Got errors: %s' %
-                    (func.__name__, args, kwargs, self.endpoints, errors))
+                    (func.__name__, args, kwargs, call_endpoints, errors))
         # elif len(errors) > 0:
             # log.warning('Got errors %s, retried successfully')
         return ret
