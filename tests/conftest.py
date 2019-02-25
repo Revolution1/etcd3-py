@@ -1,5 +1,4 @@
 from etcd3.client import Client
-from etcd3 import AioClient
 import pytest
 from .etcd_cluster import EtcdTestCluster
 
@@ -49,26 +48,6 @@ def clear(etcd_cluster):
     def _clear():
         etcd_cluster.etcdctl('del --from-key ""')
     return _clear
-
-
-@pytest.fixture
-async def aio_client(event_loop, request, etcd_cluster):
-    """
-    init Etcd3Client, close its connection-pool when teardown
-    """
-
-    c = AioClient(endpoints=etcd_cluster.get_endpoints(),
-                  protocol='https' if etcd_cluster.ssl else 'http')
-
-    def teardown():
-        async def _t():
-            await c.close()
-
-        event_loop.run_until_complete(_t())
-        event_loop._close()
-
-    request.addfinalizer(teardown)
-    return c
 
 
 def teardown_auth(etcd_cluster):  # pragma: no cover
