@@ -30,6 +30,9 @@ def test_alarm(client):
 
 @pytest.mark.skipif(NO_DOCKER_SERVICE, reason="no docker service available")
 def test_snapshot(client, etcd_cluster):
+    # write some data into etcd
+    for i in range(10):
+        etcd_cluster.etcdctl('put key value%s' % i)
     out = etcd_cluster.etcdctl('-w json put some thing')
     if six.PY3:  # pragma: no cover
         out = six.text_type(out, encoding='utf-8')
