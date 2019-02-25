@@ -103,6 +103,8 @@ class BaseClient(AuthAPI, ClusterAPI, KVAPI, LeaseAPI, MaintenanceAPI,
             self.endpoints = ([EtcdEndpoint(host, port)])
         else:
             self.endpoints = endpoints
+        self.host = self.endpoints[0].host
+        self.port =self.endpoints[0].port
         self.cert = cert
         self.protocol = protocol
         if cert:
