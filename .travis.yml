@@ -36,6 +36,8 @@ before_install:
   - sudo docker cp tmp:/usr/local/bin/etcdctl /usr/bin/etcdctl && sudo chmod 755 /usr/bin/etcdctl
   - sudo docker rm tmp
   - which etcdctl
+  - sudo mkdir /tmp/shared
+  - sudo chmod 777 /tmp/shared
 
 # command to install dependencies, e.g. pip install -r requirements.txt --use-mirrors
 install: pip install -U tox-travis codecov
