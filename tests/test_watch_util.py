@@ -107,3 +107,44 @@ def test_watcher(client, etcd_cluster):
     assert not w.watching
     assert w._resp.raw.closed
     assert len(w.errors) == max_retries
+
+
+@pytest.mark.timeout(60)
+@pytest.mark.skipif(NO_DOCKER_SERVICE, reason="no docker service available")
+def test_watcher_cluster(client, etcd_cluster):
+    w = client.Watcher(all=True, progress_notify=True, prev_kv=True)
+    w.set_default_timeout(2)
+    put_list = []
+    w.onEvent(EventType.PUT, lambda e: put_list.append(e))
+
+    assert len(w.callbacks) == 1
+
+    w.runDaemon()
+    time.sleep(0.2)
+    live = w._thread.is_alive()
+
+    with pytest.raises(RuntimeError):
+        w.runDaemon()
+    with pytest.raises(RuntimeError):
+        w.run()
+
+    assert w.watching
+    assert w._thread.is_alive
+
+    for i in range(6):
+        c = etcd_cluster.containers[i%3]
+        etcd_cluster.etcdctl("put key%s val" % i)
+        c.kill()
+        while not len(put_list) == i+1:
+            time.sleep(0.5)
+        c.restart()
+        etcd_cluster.wait_ready()
+        # refresh docker dynamically allocated endpoints
+        client.endpoints = etcd_cluster.get_endpoints()
+    w.stop()
+
+    assert w._resp.raw.closed
+    # ensure all events have been reported
+    assert len(put_list) == 6
+    # doing a rolling restart twice must generate at least 2 errors
+    assert len(w.errors) >= 2
