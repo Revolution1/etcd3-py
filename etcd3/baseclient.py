@@ -55,7 +55,9 @@ def retry_all_hosts(func):
     def wrapper(self, *args, **kwargs):
         errors = []
         got_result = False
-        for i in range(len(self.endpoints)):
+        retries = len(self.endpoints)
+        while retries > 0:
+            retries -= 1
             endpoint = self.endpoints.pop(0)
             self.endpoints.append(endpoint)
             self.host = endpoint.host
