@@ -62,5 +62,5 @@ async def test_aio_client_ssl(etcd_cluster_ssl):
 async def test_aio_client_host_port(etcd_cluster_ssl):
     endpoint = etcd_cluster_ssl.get_endpoints()[0]
     aio_client = AioClient(host=endpoint.host, port=endpoint.port,
-                           cert=(CERT_PATH, KEY_PATH), verify=CA_PATH)
+                           cert=(CERT_PATH, KEY_PATH), verify=False)
     assert await aio_client.call_rpc('/kv/range', {'key': 'test_key'})
