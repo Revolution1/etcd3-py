@@ -93,5 +93,5 @@ def test_client_ssl(etcd_cluster_ssl):
 def test_client_host_port(etcd_cluster_ssl):
     endpoint = etcd_cluster_ssl.get_endpoints()[0]
     client = Client(host=endpoint.host, port=endpoint.port,
-                    cert=(CERT_PATH, KEY_PATH), verify=CA_PATH)
+                    cert=(CERT_PATH, KEY_PATH), verify=False)
     assert client.version()

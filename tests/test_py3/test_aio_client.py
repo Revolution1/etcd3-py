@@ -53,7 +53,7 @@ async def test_async_stream(aio_client, etcd_cluster):
 @pytest.mark.asyncio
 async def test_aio_client_ssl(etcd_cluster_ssl):
     aio_client = AioClient(endpoints=etcd_cluster_ssl.get_endpoints(),
-                           cert=(CERT_PATH, KEY_PATH), verify=CA_PATH)
+                           cert=(CERT_PATH, KEY_PATH), verify=False)
     assert await aio_client.call_rpc('/kv/range', {'key': 'test_key'})
 
 
