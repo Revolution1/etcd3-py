@@ -86,8 +86,8 @@ class EtcdTestCluster:
         for c in self.containers:
             c.reload()
         return [EtcdEndpoint(
-            DOCKER_PUBLISH_HOST,
-            c.attrs['NetworkSettings']['Ports']['2379/tcp'][0]['HostPort'])
+            c.attrs['NetworkSettings']['Networks']["etcd-%s" % self.ident]['IPAddress'],
+            2379)
             for c in self.containers]
 
     def get_endpoints_param(self):
