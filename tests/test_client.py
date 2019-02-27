@@ -85,7 +85,7 @@ def test_patched_request_exception(client, monkeypatch):
 @pytest.mark.skipif(NO_DOCKER_SERVICE, reason="no docker service available")
 def test_client_ssl(etcd_cluster_ssl):
     client = Client(endpoints=etcd_cluster_ssl.get_endpoints(),
-                    cert=(CERT_PATH, KEY_PATH), verify=CA_PATH)
+                    cert=(CERT_PATH, KEY_PATH), verify=False)
     assert client.version()
 
 

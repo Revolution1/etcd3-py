@@ -10,7 +10,7 @@ import aiohttp
 import six
 from aiohttp.client import _RequestContextManager
 
-from .baseclient import retry_all_hosts
+from .utils import retry_all_hosts
 from .baseclient import BaseClient
 from .baseclient import BaseModelizedStreamResponse
 from .baseclient import DEFAULT_VERSION
@@ -167,7 +167,8 @@ class AioClient(BaseClient):
                 warnings.warn(Etcd3Warning("the openssl version of your python is too old to support TLSv1.1+,"
                                            "please upgrade you python"))
             ssl_context.verify_mode = cert_reqs
-            ssl_context.load_verify_locations(cafile=cafile)
+            if cafile:
+                ssl_context.load_verify_locations(cafile=cafile)
             ssl_context.load_cert_chain(*self.cert)
         connector = aiohttp.TCPConnector(limit=pool_size, ssl=self.ssl_context)
         self.session = aiohttp.ClientSession(connector=connector)
