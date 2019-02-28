@@ -55,8 +55,6 @@ DEFAULT_VERSION = '3.3.0'
 
 class BaseClient(AuthAPI, ClusterAPI, KVAPI, LeaseAPI, MaintenanceAPI,
                  WatchAPI, ExtraAPI, LockAPI):
-    @check_param(at_most_one_of=['port', 'endpoints'], at_least_one_of=['port', 'endpoints'])
-    @check_param(at_most_one_of=['host', 'endpoints'], at_least_one_of=['host', 'endpoints'])
     def __init__(self, host=None, port=None, endpoints=None, protocol='http', cert=(),
                  verify=None, timeout=None, headers=None, user_agent=None, pool_size=30,
                  username=None, password=None, token=None,
