@@ -7,6 +7,8 @@ import shlex
 import sys
 import time
 import warnings
+import copy
+import inspect
 from collections import namedtuple, OrderedDict, Hashable
 from subprocess import Popen, PIPE
 from threading import Lock
@@ -382,6 +384,50 @@ def find_executable(executable, path=None):  # pragma: no cover
             f = os.path.join(p, execname)
             if os.path.isfile(f):
                 return f
+
+def retry_all_hosts(func):
+    def current_caller_name():
+        previous_frame = inspect.currentframe().f_back.f_back
+        return inspect.getframeinfo(previous_frame).function
+    def wrapper(self, *args, **kwargs):
+        calling_function = current_caller_name()
+        if not calling_function in self.failover_whitelist:
+            return func(self, *args, **kwargs)
+        errors = []
+        got_result = False
+        call_endpoints = copy.copy(self.endpoints)
+        retries = len(call_endpoints)
+        while retries > 0:
+            retries -= 1
+            endpoint = call_endpoints.pop(0)
+            call_endpoints.append(endpoint)
+            self.host = endpoint.host
+            self.port = endpoint.port
+            try:
+                ret = func(self, *args, **kwargs)
+                got_result = True
+                break
+            except Exception as e:
+                errors.append(e)
+                log.warning('Failed to call %s(args: %s, kwargs: %s) on '
+                            'endpoint %s (%s)' %
+                            (func.__name__, args, kwargs, endpoint, e))
+        if not got_result:
+            exception_types = [x.__class__ for x in errors]
+            if len(set(exception_types)) == 1:
+                log.error('Failed to call %s(args: %s, kwargs: %s) on all '
+                          'endpoints: %s. Got errors: %s' %
+                          (func.__name__, args, kwargs, call_endpoints, errors))
+                raise errors[0]
+            else:
+                raise Etcd3Exception(
+                    'Failed to call %s(args: %s, kwargs: %s) on all '
+                    'endpoints: %s. Got errors: %s' %
+                    (func.__name__, args, kwargs, call_endpoints, errors))
+        # elif len(errors) > 0:
+            # log.warning('Got errors %s, retried successfully')
+        return ret
+    return wrapper
 
 
 class EtcdEndpoint():

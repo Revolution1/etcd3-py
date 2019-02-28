@@ -29,6 +29,7 @@ from .utils import Etcd3Warning
 from .utils import log
 from .utils import check_param
 from .utils import EtcdEndpoint
+from .utils import retry_all_hosts
 from .version import __version__
 
 
@@ -52,45 +53,6 @@ class BaseModelizedStreamResponse(object):  # pragma: no cover
 DEFAULT_VERSION = '3.3.0'
 
 
-def retry_all_hosts(func):
-    def wrapper(self, *args, **kwargs):
-        errors = []
-        got_result = False
-        call_endpoints = copy.copy(self.endpoints)
-        retries = len(call_endpoints)
-        while retries > 0:
-            retries -= 1
-            endpoint = call_endpoints.pop(0)
-            call_endpoints.append(endpoint)
-            self.host = endpoint.host
-            self.port = endpoint.port
-            try:
-                ret = func(self, *args, **kwargs)
-                got_result = True
-                break
-            except Exception as e:
-                errors.append(e)
-                log.warning('Failed to call %s(args: %s, kwargs: %s) on '
-                            'endpoint %s (%s)' %
-                            (func.__name__, args, kwargs, endpoint, e))
-        if not got_result:
-            exception_types = [x.__class__ for x in errors]
-            if len(set(exception_types)) == 1:
-                log.error('Failed to call %s(args: %s, kwargs: %s) on all '
-                          'endpoints: %s. Got errors: %s' %
-                          (func.__name__, args, kwargs, call_endpoints, errors))
-                raise errors[0]
-            else:
-                raise Etcd3Exception(
-                    'Failed to call %s(args: %s, kwargs: %s) on all '
-                    'endpoints: %s. Got errors: %s' %
-                    (func.__name__, args, kwargs, call_endpoints, errors))
-        # elif len(errors) > 0:
-            # log.warning('Got errors %s, retried successfully')
-        return ret
-    return wrapper
-
-
 class BaseClient(AuthAPI, ClusterAPI, KVAPI, LeaseAPI, MaintenanceAPI,
                  WatchAPI, ExtraAPI, LockAPI):
     @check_param(at_most_one_of=['port', 'endpoints'], at_least_one_of=['port', 'endpoints'])
@@ -98,7 +60,8 @@ class BaseClient(AuthAPI, ClusterAPI, KVAPI, LeaseAPI, MaintenanceAPI,
     def __init__(self, host=None, port=None, endpoints=None, protocol='http', cert=(),
                  verify=None, timeout=None, headers=None, user_agent=None, pool_size=30,
                  username=None, password=None, token=None,
-                 server_version=DEFAULT_VERSION, cluster_version=DEFAULT_VERSION):
+                 server_version=DEFAULT_VERSION, cluster_version=DEFAULT_VERSION,
+                 failover_whitelist=["range", "watch"]):
         if host is not None:
             self.endpoints = ([EtcdEndpoint(host, port)])
         else:
@@ -122,6 +85,7 @@ class BaseClient(AuthAPI, ClusterAPI, KVAPI, LeaseAPI, MaintenanceAPI,
         self.cluster_version = cluster_version
         self.api_spec = None
         self.api_prefix = '/v3alpha'
+        self.failover_whitelist = failover_whitelist
         self._retrieve_version()
         self._verify_version()
         self._get_prefix()

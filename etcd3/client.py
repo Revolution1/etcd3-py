@@ -8,7 +8,7 @@ import requests
 import six
 
 from .baseclient import BaseClient
-from .baseclient import retry_all_hosts
+from .utils import retry_all_hosts
 from .baseclient import BaseModelizedStreamResponse
 from .baseclient import DEFAULT_VERSION
 from .errors import Etcd3Exception
