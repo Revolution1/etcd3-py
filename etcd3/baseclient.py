@@ -7,7 +7,6 @@ import warnings
 
 import semantic_version as sem
 from six.moves import urllib_parse
-import copy
 
 from .apis import AuthAPI
 from .apis import ClusterAPI
@@ -18,7 +17,6 @@ from .apis import LockAPI
 from .apis import MaintenanceAPI
 from .apis import WatchAPI
 from .errors import UnsupportedServerVersion
-from .errors import Etcd3Exception
 from .stateful import Lease
 from .stateful import Lock
 from .stateful import Txn
@@ -27,9 +25,7 @@ from .swagger_helper import SwaggerSpec
 from .swaggerdefs import get_spec
 from .utils import Etcd3Warning
 from .utils import log
-from .utils import check_param
 from .utils import EtcdEndpoint
-from .utils import retry_all_hosts
 from .version import __version__
 
 
