@@ -64,8 +64,7 @@ class BaseClient(AuthAPI, ClusterAPI, KVAPI, LeaseAPI, MaintenanceAPI,
             self.endpoints = ([EtcdEndpoint(host, port)])
         else:
             self.endpoints = endpoints
-        self.host = self.endpoints[0].host
-        self.port =self.endpoints[0].port
+        self.current_endpoint = self.endpoints[0]
         self.cert = cert
         self.protocol = protocol
         if cert:
@@ -133,7 +132,9 @@ class BaseClient(AuthAPI, ClusterAPI, KVAPI, LeaseAPI, MaintenanceAPI,
         """
         :return: baseurl from protocol, host, self
         """
-        return '{}://{}:{}'.format(self.protocol, self.host, self.port)
+        return '{}://{}:{}'.format(self.protocol,
+                                   self.current_endpoint.host,
+                                   self.current_endpoint.port)
 
     def _prefix(self, method):
         return self.api_prefix + method

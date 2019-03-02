@@ -9,6 +9,7 @@ import warnings
 import aiohttp
 import six
 from aiohttp.client import _RequestContextManager
+from asyncio import Lock
 
 from .utils import retry_all_hosts
 from .baseclient import BaseClient
@@ -139,6 +140,7 @@ class AioClient(BaseClient):
                  timeout=None, headers=None, user_agent=None, pool_size=30,
                  username=None, password=None, token=None,
                  server_version=DEFAULT_VERSION, cluster_version=DEFAULT_VERSION):
+        self.current_endpoint_lock = Lock()
         super(AioClient, self).__init__(
             host=host, port=port, endpoints=endpoints, protocol=protocol,
             cert=cert, verify=verify, timeout=timeout, headers=headers,

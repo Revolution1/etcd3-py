@@ -6,6 +6,7 @@ import json
 
 import requests
 import six
+from threading import Lock
 
 from .baseclient import BaseClient
 from .utils import retry_all_hosts
@@ -101,6 +102,7 @@ class Client(BaseClient):
             which we retry a request, import urllib3's ``Retry`` class and pass
             that instead.
         """
+        self.current_endpoint_lock = Lock()
         super(Client, self).__init__(
             host=host, port=port, endpoints=endpoints, protocol=protocol,
             cert=cert, verify=verify, timeout=timeout, headers=headers,

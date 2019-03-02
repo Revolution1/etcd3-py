@@ -9,9 +9,13 @@ import time
 import warnings
 import copy
 import inspect
+import socket
 from collections import namedtuple, OrderedDict, Hashable
 from subprocess import Popen, PIPE
 from threading import Lock
+from requests.exceptions import ChunkedEncodingError, ConnectTimeout
+from urllib3.exceptions import MaxRetryError
+from http.client import IncompleteRead
 
 try:  # pragma: no cover
     from inspect import getfullargspec as getargspec
@@ -385,6 +389,13 @@ def find_executable(executable, path=None):  # pragma: no cover
             if os.path.isfile(f):
                 return f
 
+failover_exceptions = (ChunkedEncodingError,
+                       IncompleteRead,
+                       ConnectTimeout,
+                       MaxRetryError,
+                       socket.timeout,
+                       )
+
 def retry_all_hosts(func):
     def current_caller_name():
         previous_frame = inspect.currentframe().f_back.f_back
@@ -392,41 +403,48 @@ def retry_all_hosts(func):
     def wrapper(self, *args, **kwargs):
         calling_function = current_caller_name()
         if not calling_function in self.failover_whitelist:
+            log.debug('%s not in failover waitlist(%s)' %
+                      (calling_function, self.failover_whitelist))
+        try:
             return func(self, *args, **kwargs)
-        errors = []
-        got_result = False
-        call_endpoints = copy.copy(self.endpoints)
-        retries = len(call_endpoints)
-        while retries > 0:
-            retries -= 1
-            endpoint = call_endpoints.pop(0)
-            call_endpoints.append(endpoint)
-            self.host = endpoint.host
-            self.port = endpoint.port
-            try:
-                ret = func(self, *args, **kwargs)
-                got_result = True
-                break
-            except Exception as e:
-                errors.append(e)
-                log.warning('Failed to call %s(args: %s, kwargs: %s) on '
-                            'endpoint %s (%s)' %
-                            (func.__name__, args, kwargs, endpoint, e))
-        if not got_result:
-            exception_types = [x.__class__ for x in errors]
-            if len(set(exception_types)) == 1:
-                log.error('Failed to call %s(args: %s, kwargs: %s) on all '
-                          'endpoints: %s. Got errors: %s' %
-                          (func.__name__, args, kwargs, call_endpoints, errors))
-                raise errors[0]
-            else:
-                raise Etcd3Exception(
-                    'Failed to call %s(args: %s, kwargs: %s) on all '
-                    'endpoints: %s. Got errors: %s' %
-                    (func.__name__, args, kwargs, call_endpoints, errors))
-        # elif len(errors) > 0:
-            # log.warning('Got errors %s, retried successfully')
-        return ret
+        except failover_exceptions as e:
+            if not calling_function in self.failover_whitelist:
+                log.debug('%s not in failover waitlist(%s)' %
+                          (calling_function, self.failover_whitelist))
+                raise e
+            errors = []
+            got_result = False
+            with self.current_endpoint_lock:
+                # to exclude the current endpoint it should be saved
+                # before the call in the outmost `try`, and the
+                # whole wrapper should depend on the lock
+                for endpoint in self.endpoints:
+                    self.current_endpoint = endpoint
+                    try:
+                        self.current_endpoint = endpoint
+                        ret = func(self, *args, **kwargs)
+                        got_result = True
+                        break
+                    except failover_exceptions as e:
+                        errors.append(e)
+                        log.warning('Failed to call %s(args: %s, kwargs: %s) on'
+                                    ' endpoint %s (%s)' %
+                                    (func.__name__, args, kwargs, endpoint, e))
+                    except Exception as e:
+                        log.debug('received exception %s, not in '
+                                  'failover_exceptions(%s)' %
+                                  (e, failover_exceptions))
+                if not got_result:
+                    log.error('Failed to call %s(args: %s, kwargs: %s) on all '
+                              'endpoints: %s. Got errors: %s' %
+                              (func.__name__, args, kwargs,
+                               call_endpoints, errors))
+                    exception_types = [x.__class__ for x in errors]
+                    if len(set(exception_types)) == 1:
+                        raise errors[0]
+                    else:
+                        raise Etcd3Exception('Failed failover')
+            return ret
     return wrapper
 
 
