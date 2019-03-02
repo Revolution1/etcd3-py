@@ -111,7 +111,7 @@ def test_watcher(client, etcd_cluster):
 
 @pytest.mark.timeout(60)
 @pytest.mark.skipif(NO_DOCKER_SERVICE, reason="no docker service available")
-def test_watcher_cluster(client, etcd_cluster):
+def test_watcher_failover(client, etcd_cluster):
     w = client.Watcher(all=True, progress_notify=True, prev_kv=True)
     client.timeout = 2
     w.set_default_timeout(2)
