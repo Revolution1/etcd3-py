@@ -59,7 +59,7 @@ class BaseClient(AuthAPI, ClusterAPI, KVAPI, LeaseAPI, MaintenanceAPI,
                  verify=None, timeout=None, headers=None, user_agent=None, pool_size=30,
                  username=None, password=None, token=None,
                  server_version=DEFAULT_VERSION, cluster_version=DEFAULT_VERSION,
-                 failover_whitelist=["range", "watch"]):
+                 failover_whitelist=["range", "watch", "status"]):
         if host is not None:
             self.endpoints = ([EtcdEndpoint(host, port)])
         else:
