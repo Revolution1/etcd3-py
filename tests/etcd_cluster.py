@@ -38,8 +38,8 @@ class EtcdTestCluster:
                     continue
                 return out.output
             except Exception as e:
-                log.warn('error executing etcdctl command %s on %s: %s' %
-                         (cmd, c.name, e))
+                log.warning('error executing etcdctl command %s on %s: %s' %
+                            (cmd, c.name, e))
         raise Exception("error executing etcdctl command %s on all containers" %
                         cmd)
 
