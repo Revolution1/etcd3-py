@@ -3,26 +3,13 @@ import time
 import pytest
 import socket
 
-from etcd3 import Client, EventType
-from tests.docker_cli import docker_run_etcd_main
-from .envs import protocol, host
-from .etcd_go_cli import etcdctl, NO_ETCD_SERVICE
-
-
-@pytest.fixture(scope='module')
-def client():
-    """
-    init Etcd3Client, close its connection-pool when teardown
-    """
-    _, p, _ = docker_run_etcd_main()
-    c = Client(host, p, protocol)
-    yield c
-    c.close()
+from etcd3 import EventType
+from .envs import NO_DOCKER_SERVICE
 
 
 @pytest.mark.timeout(60)
-@pytest.mark.skipif(NO_ETCD_SERVICE, reason="no etcd service available")
-def test_watcher(client):
+@pytest.mark.skipif(NO_DOCKER_SERVICE, reason="no docker service available")
+def test_watcher(client, etcd_cluster):
     max_retries = 3
     w = client.Watcher(all=True, progress_notify=True, prev_kv=True, max_retries=max_retries)
 
@@ -51,12 +38,12 @@ def test_watcher(client):
     assert w.watching
     assert w._thread.is_alive
 
-    etcdctl('put foo bar')
-    etcdctl('put foo bar')
-    etcdctl('del foo')
-    etcdctl('put fizz buzz')
-    etcdctl('put fizz buzz')
-    etcdctl('put fizz buzz')
+    etcd_cluster.etcdctl('put foo bar')
+    etcd_cluster.etcdctl('put foo bar')
+    etcd_cluster.etcdctl('del foo')
+    etcd_cluster.etcdctl('put fizz buzz')
+    etcd_cluster.etcdctl('put fizz buzz')
+    etcd_cluster.etcdctl('put fizz buzz')
 
     time.sleep(1)
     w.stop()
@@ -70,8 +57,8 @@ def test_watcher(client):
     assert len(put_list) == 5
     assert len(all_list) == 6
 
-    etcdctl('put foo bar')
-    etcdctl('put fizz buzz')
+    etcd_cluster.etcdctl('put foo bar')
+    etcd_cluster.etcdctl('put fizz buzz')
 
     foo_list = []
     fizz_list = []
@@ -89,13 +76,13 @@ def test_watcher(client):
 
     times = 3
     with w:
-        etcdctl('put foo bar')
+        etcd_cluster.etcdctl('put foo bar')
         for e in w:
             if not times:
                 break
             assert e.key == b'foo'
             assert e.value == b'bar'
-            etcdctl('put foo bar')
+            etcd_cluster.etcdctl('put foo bar')
             times -= 1
     assert not w.watching
     assert w._resp.raw.closed
@@ -120,3 +107,45 @@ def test_watcher(client):
     assert not w.watching
     assert w._resp.raw.closed
     assert len(w.errors) == max_retries
+
+
+@pytest.mark.timeout(60)
+@pytest.mark.skipif(NO_DOCKER_SERVICE, reason="no docker service available")
+def test_watcher_failover(client, etcd_cluster):
+    w = client.Watcher(all=True, progress_notify=True, prev_kv=True)
+    client.timeout = 2
+    w.set_default_timeout(2)
+    put_list = []
+    w.onEvent(EventType.PUT, lambda e: put_list.append(e))
+
+    assert len(w.callbacks) == 1
+
+    w.runDaemon()
+    time.sleep(0.2)
+    live = w._thread.is_alive()
+
+    with pytest.raises(RuntimeError):
+        w.runDaemon()
+    with pytest.raises(RuntimeError):
+        w.run()
+
+    assert w.watching
+    assert w._thread.is_alive
+    assert client.current_endpoint == client.endpoints[0]
+
+    # hard rolling restart with write and calls to status after killing each node
+    for i in range(3):
+        c = etcd_cluster.containers[i%3]
+        c.kill()
+        etcd_cluster.etcdctl("put key%s val" % i)
+        while not len(put_list) == i+1:
+            time.sleep(0.5)
+            client.status()
+        c.restart()
+        assert w.watching
+        etcd_cluster.wait_ready()
+    w.stop()
+
+    assert w._resp.raw.closed
+    # ensure all events have been reported
+    assert len(put_list) == 3

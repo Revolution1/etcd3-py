@@ -4,21 +4,10 @@ from threading import Thread
 
 import pytest
 
-from etcd3 import Client, Lock
-from .envs import protocol, host, port
-from .etcd_go_cli import NO_ETCD_SERVICE, etcdctl
+from etcd3 import Lock
+from .envs import NO_DOCKER_SERVICE
 
 logging.getLogger().setLevel(logging.DEBUG)
-
-
-@pytest.fixture(scope='module')
-def client():
-    """
-    init Etcd3Client, close its connection-pool when teardown
-    """
-    c = Client(host, port, protocol)
-    yield c
-    c.close()
 
 
 class context:
@@ -26,12 +15,8 @@ class context:
         self.exit = False
 
 
-def clear():
-    etcdctl('del', '--from-key', '')
-
-
-@pytest.mark.skipif(NO_ETCD_SERVICE, reason="no etcd service available")
-def test_lock(client):
+@pytest.mark.skipif(NO_DOCKER_SERVICE, reason="no docker service available")
+def test_lock(client, clear):
     clear()
     holds = {}
 
@@ -89,8 +74,8 @@ def test_lock(client):
     assert l2.holders() == 0
 
 
-@pytest.mark.skipif(NO_ETCD_SERVICE, reason="no etcd service available")
-def test_reentrant_lock_host(client):
+@pytest.mark.skipif(NO_DOCKER_SERVICE, reason="no docker service available")
+def test_reentrant_lock_host(client, clear):
     clear()
     holds = {}
 
@@ -149,8 +134,8 @@ def test_reentrant_lock_host(client):
 
 
 @pytest.mark.timeout(60)
-@pytest.mark.skipif(NO_ETCD_SERVICE, reason="no etcd service available")
-def test_reentrant_lock(client):
+@pytest.mark.skipif(NO_DOCKER_SERVICE, reason="no docker service available")
+def test_reentrant_lock(client, clear):
     clear()
     holds = {}
 

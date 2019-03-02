@@ -9,7 +9,9 @@ import warnings
 import aiohttp
 import six
 from aiohttp.client import _RequestContextManager
+from asyncio import Lock
 
+from .utils import retry_all_hosts
 from .baseclient import BaseClient
 from .baseclient import BaseModelizedStreamResponse
 from .baseclient import DEFAULT_VERSION
@@ -73,7 +75,7 @@ class ModelizedStreamResponse(BaseModelizedStreamResponse):
     async def __aexit__(self, exc_type, exc_val, exc_tb):
         self.close()
 
-    async def __aiter__(self):
+    def __aiter__(self):
         return self
 
     async def __anext__(self):
@@ -111,7 +113,7 @@ class ResponseIter(object):
         self.left_chunk = b''
         self.i = 0
 
-    async def __aiter__(self):
+    def __aiter__(self):
         return self
 
     async def next(self):
@@ -133,16 +135,18 @@ class ResponseIter(object):
 
 
 class AioClient(BaseClient):
-    def __init__(self, host='127.0.0.1', port=2379, protocol='http',
+    def __init__(self, host=None, port=None, endpoints=None, protocol='http',
                  cert=(), verify=None,
                  timeout=None, headers=None, user_agent=None, pool_size=30,
                  username=None, password=None, token=None,
                  server_version=DEFAULT_VERSION, cluster_version=DEFAULT_VERSION):
-        super(AioClient, self).__init__(host=host, port=port, protocol=protocol,
-                                        cert=cert, verify=verify,
-                                        timeout=timeout, headers=headers, user_agent=user_agent, pool_size=pool_size,
-                                        username=username, password=password, token=token,
-                                        server_version=server_version, cluster_version=cluster_version)
+        self.current_endpoint_lock = Lock()
+        super(AioClient, self).__init__(
+            host=host, port=port, endpoints=endpoints, protocol=protocol,
+            cert=cert, verify=verify, timeout=timeout, headers=headers,
+            user_agent=user_agent, pool_size=pool_size,
+            username=username, password=password, token=token,
+            server_version=server_version, cluster_version=cluster_version)
         self.ssl_context = None
         if self.cert:
             if verify is False:
@@ -165,7 +169,8 @@ class AioClient(BaseClient):
                 warnings.warn(Etcd3Warning("the openssl version of your python is too old to support TLSv1.1+,"
                                            "please upgrade you python"))
             ssl_context.verify_mode = cert_reqs
-            ssl_context.load_verify_locations(cafile=cafile)
+            if cafile:
+                ssl_context.load_verify_locations(cafile=cafile)
             ssl_context.load_cert_chain(*self.cert)
         connector = aiohttp.TCPConnector(limit=pool_size, ssl=self.ssl_context)
         self.session = aiohttp.ClientSession(connector=connector)
@@ -225,6 +230,7 @@ class AioClient(BaseClient):
             code = data.get('code')
         raise get_client_error(error, code, status, resp)
 
+    @retry_all_hosts
     def call_rpc(self, method, data=None, stream=False, encode=True, raw=False, **kwargs):
         """
         call ETCDv3 RPC and return response object

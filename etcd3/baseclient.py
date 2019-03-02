@@ -25,6 +25,7 @@ from .swagger_helper import SwaggerSpec
 from .swaggerdefs import get_spec
 from .utils import Etcd3Warning
 from .utils import log
+from .utils import EtcdEndpoint
 from .version import __version__
 
 
@@ -50,13 +51,18 @@ DEFAULT_VERSION = '3.3.0'
 
 class BaseClient(AuthAPI, ClusterAPI, KVAPI, LeaseAPI, MaintenanceAPI,
                  WatchAPI, ExtraAPI, LockAPI):
-    def __init__(self, host='127.0.0.1', port=2379, protocol='http',
-                 cert=(), verify=None,
-                 timeout=None, headers=None, user_agent=None, pool_size=30,
+    def __init__(self, host=None, port=None, endpoints=None, protocol='http', cert=(),
+                 verify=None, timeout=None, headers=None, user_agent=None, pool_size=30,
                  username=None, password=None, token=None,
-                 server_version=DEFAULT_VERSION, cluster_version=DEFAULT_VERSION):
-        self.host = host
-        self.port = port
+                 server_version=DEFAULT_VERSION, cluster_version=DEFAULT_VERSION,
+                 failover_whitelist=None):
+        if failover_whitelist is None:
+            failover_whitelist = ["range", "watch", "status"]
+        if host is not None:
+            self.endpoints = ([EtcdEndpoint(host, port)])
+        else:
+            self.endpoints = endpoints
+        self.current_endpoint = self.endpoints[0]
         self.cert = cert
         self.protocol = protocol
         if cert:
@@ -74,6 +80,7 @@ class BaseClient(AuthAPI, ClusterAPI, KVAPI, LeaseAPI, MaintenanceAPI,
         self.cluster_version = cluster_version
         self.api_spec = None
         self.api_prefix = '/v3alpha'
+        self.failover_whitelist = failover_whitelist
         self._retrieve_version()
         self._verify_version()
         self._get_prefix()
@@ -123,7 +130,9 @@ class BaseClient(AuthAPI, ClusterAPI, KVAPI, LeaseAPI, MaintenanceAPI,
         """
         :return: baseurl from protocol, host, self
         """
-        return '{}://{}:{}'.format(self.protocol, self.host, self.port)
+        return '{}://{}:{}'.format(self.protocol,
+                                   self.current_endpoint.host,
+                                   self.current_endpoint.port)
 
     def _prefix(self, method):
         return self.api_prefix + method

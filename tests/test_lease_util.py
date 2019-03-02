@@ -4,32 +4,18 @@ import mock
 import pytest
 import random
 
-from etcd3.client import Client
-from tests.docker_cli import docker_run_etcd_main
-from .envs import protocol, host
-from .etcd_go_cli import NO_ETCD_SERVICE, etcdctl
+from .envs import NO_DOCKER_SERVICE
 
 
-@pytest.fixture(scope='module')
-def client():
-    """
-    init Etcd3Client, close its connection-pool when teardown
-    """
-    _, p, _ = docker_run_etcd_main()
-    c = Client(host, p, protocol)
-    yield c
-    c.close()
-
-
-@pytest.mark.skipif(NO_ETCD_SERVICE, reason="no etcd service available")
-def test_lease_util(client):
+@pytest.mark.skipif(NO_DOCKER_SERVICE, reason="no docker service available")
+def test_lease_util(client, etcd_cluster):
     ID = random.randint(10000, 100000)
     TTL = 2  # min is 2sec
     lease = client.Lease(ttl=TTL, ID=ID)
     with lease:
         hexid = hex(ID)[2:]
-        etcdctl('put --lease=%s foo bar' % hexid)
-        etcdctl('put --lease=%s fizz buzz' % hexid)
+        etcd_cluster.etcdctl('put --lease=%s foo bar' % hexid)
+        etcd_cluster.etcdctl('put --lease=%s fizz buzz' % hexid)
         time.sleep(TTL)
         r = lease.time_to_live(keys=True)
         assert r.ID == ID
@@ -55,6 +41,7 @@ def test_lease_util(client):
     lease.grant()
     lease.keepalive(keep_cb=keep_cb, cancel_cb=cancel_cb)
     lease.cancel_keepalive()
+    time.sleep(1)
     assert keep_cb.called
     assert cancel_cb.called
 
