@@ -15,7 +15,10 @@ from subprocess import Popen, PIPE
 from threading import Lock
 from requests.exceptions import ChunkedEncodingError, ConnectTimeout
 from urllib3.exceptions import MaxRetryError
-from http.client import IncompleteRead
+try:
+    from httplib import IncompleteRead
+except ImportError:
+    from http.client import IncompleteRead
 
 try:  # pragma: no cover
     from inspect import getfullargspec as getargspec
