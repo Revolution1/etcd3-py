@@ -3,7 +3,11 @@
 import enum
 
 
-class AlarmRequestAlarmAction(enum.Enum):
+class EtcdModel(object):
+    pass
+
+
+class AlarmRequestAlarmAction(EtcdModel, enum.Enum):
     """
     ref: #/definitions/AlarmRequestAlarmAction
 
@@ -14,7 +18,7 @@ class AlarmRequestAlarmAction(enum.Enum):
     DEACTIVATE = 'DEACTIVATE'
 
 
-class CompareCompareResult(enum.Enum):
+class CompareCompareResult(EtcdModel, enum.Enum):
     """
     ref: #/definitions/CompareCompareResult
 
@@ -26,7 +30,7 @@ class CompareCompareResult(enum.Enum):
     NOT_EQUAL = 'NOT_EQUAL'
 
 
-class CompareCompareTarget(enum.Enum):
+class CompareCompareTarget(EtcdModel, enum.Enum):
     """
     ref: #/definitions/CompareCompareTarget
 
@@ -38,7 +42,7 @@ class CompareCompareTarget(enum.Enum):
     VALUE = 'VALUE'
 
 
-class EventEventType(enum.Enum):
+class EventEventType(EtcdModel, enum.Enum):
     """
     ref: #/definitions/EventEventType
 
@@ -48,7 +52,7 @@ class EventEventType(enum.Enum):
     DELETE = 'DELETE'
 
 
-class RangeRequestSortOrder(enum.Enum):
+class RangeRequestSortOrder(EtcdModel, enum.Enum):
     """
     ref: #/definitions/RangeRequestSortOrder
 
@@ -59,7 +63,7 @@ class RangeRequestSortOrder(enum.Enum):
     DESCEND = 'DESCEND'
 
 
-class RangeRequestSortTarget(enum.Enum):
+class RangeRequestSortTarget(EtcdModel, enum.Enum):
     """
     ref: #/definitions/RangeRequestSortTarget
 
@@ -72,7 +76,7 @@ class RangeRequestSortTarget(enum.Enum):
     VALUE = 'VALUE'
 
 
-class WatchCreateRequestFilterType(enum.Enum):
+class WatchCreateRequestFilterType(EtcdModel, enum.Enum):
     """
     ref: #/definitions/WatchCreateRequestFilterType
 
@@ -82,7 +86,7 @@ class WatchCreateRequestFilterType(enum.Enum):
     NODELETE = 'NODELETE'
 
 
-class authpbPermissionType(enum.Enum):
+class authpbPermissionType(EtcdModel, enum.Enum):
     """
     ref: #/definitions/authpbPermissionType
 
@@ -93,7 +97,7 @@ class authpbPermissionType(enum.Enum):
     READWRITE = 'READWRITE'
 
 
-class etcdserverpbAlarmType(enum.Enum):
+class etcdserverpbAlarmType(EtcdModel, enum.Enum):
     """
     ref: #/definitions/etcdserverpbAlarmType
 

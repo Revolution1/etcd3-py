@@ -19,6 +19,7 @@ class EtcdLockAcquireTimeout(Exception):
     pass
 
 
+# TODO: [critical] thread safety
 class Lock(object):  # TODO: maybe we could improve the performance by reduce some HTTP requests
     """
     Locking recipe for etcd, inspired by the kazoo recipe for zookeeper
@@ -56,6 +57,7 @@ class Lock(object):  # TODO: maybe we could improve the performance by reduce so
         self.is_taken = False  # if the lock is taken by someone
         self.lease = None
         self.__holders_lease = None
+        self._watcher = None
         log.debug("Initiating lock for %s with uuid %s", self.lock_key, self.uuid)
 
     def _get_uuid(self):
@@ -242,7 +244,7 @@ class Lock(object):  # TODO: maybe we could improve the performance by reduce so
         locker = locker or self._get_locker()
         if not locker:
             return
-        self.watcher = watcher = self.client.Watcher(key=locker.key, max_retries=0)
+        self._watcher = watcher = self.client.Watcher(key=locker.key, max_retries=0)
         return watcher.watch_once(lambda e: e.type == EventType.DELETE or e.value == self.uuid, timeout=timeout)
 
     def release(self):
