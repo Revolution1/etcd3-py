@@ -56,8 +56,9 @@ class Event(KeyValue):
     Watch event
     """
 
-    def __init__(self, data):
+    def __init__(self, data, header=None):
         super(Event, self).__init__(data.kv._data)
+        self.header = header
         self.type = data.type or EventType.PUT  # default is PUT
         self._data['type'] = self.type
         self.prev_kv = None
@@ -256,7 +257,7 @@ class Watcher(object):
                     self.start_revision = r.header.revision
                 if 'events' in r:
                     for event in r.events:
-                        self.dispatch_event(Event(event))
+                        self.dispatch_event(Event(event, r.header))
         self.watching = False
 
     def run(self):
@@ -373,7 +374,7 @@ class Watcher(object):
                             self.watch_id = r.watch_id
                         if 'events' in r:
                             for event in r.events:
-                                yield Event(event)
+                                yield Event(event, r.header)
             # almost the same as self.run()
             except (ConnectionError, ChunkedEncodingError) as e:
                 # ConnectionError(MaxRetryError) means cannot reach the server

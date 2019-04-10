@@ -1,7 +1,7 @@
+import socket
 import time
 
 import pytest
-import socket
 
 from etcd3 import Client, EventType
 from tests.docker_cli import docker_run_etcd_main
@@ -95,6 +95,7 @@ def test_watcher(client):
                 break
             assert e.key == b'foo'
             assert e.value == b'bar'
+            assert e.header
             etcdctl('put foo bar')
             times -= 1
     assert not w.watching
