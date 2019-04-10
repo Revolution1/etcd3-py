@@ -18,9 +18,13 @@ else:
     file_types = (io.IOBase,)
 
 try:
-    from .models import name_to_model
+    from .models import name_to_model, EtcdModel
 except ImportError:  # pragma: no cover
     name_to_model = {}
+
+
+    class EtcdModel(object):
+        pass
 
 
 def swagger_escape(s):  # pragma: no cover
@@ -422,7 +426,7 @@ class SwaggerNode(object):
             rep = lambda self: '%s(%s)' % (name, ', '.join(
                 ['%s=%s' % (k, repr(v)) for k, v in six.iteritems(self.__dict__) if k in self._data]))
 
-            return type(str(name), (), {
+            return type(str(name), (EtcdModel,), {
                 '__init__': init,
                 '__repr__': rep,
                 '__iter__': ite,

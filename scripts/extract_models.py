@@ -3,8 +3,11 @@ ENUM_FILE_TPL = '''\
 # flake8: noqa
 import enum
 
+class EtcdModel(object):
+    pass
+
 {% for e in enums %}
-class {{e._path | last}}(enum.Enum):
+class {{e._path | last}}(EtcdModel, enum.Enum):
     """
     ref: {{ e._ref }}
 
@@ -25,6 +28,8 @@ __all__ = [{% for e in enums %}
 
 '''
 
+DEFAULT_MODEL_VERSION = '3.3.0'
+
 if __name__ == '__main__':
     import os
     import sys
@@ -36,9 +41,9 @@ if __name__ == '__main__':
     from isort import SortImports
 
     from etcd3.swagger_helper import SwaggerSpec
+    from etcd3.swaggerdefs import get_spec
 
-    rpc_swagger_json = os.path.join(os.path.dirname(__file__), '../etcd3/rpc.swagger.json')
-    swaggerSpec = SwaggerSpec(rpc_swagger_json)
+    swaggerSpec = SwaggerSpec(get_spec(DEFAULT_MODEL_VERSION))
 
     enums = [i for i in swaggerSpec.definitions if i._is_enum]
     enum_tpl = jinja2.Template(ENUM_FILE_TPL)
