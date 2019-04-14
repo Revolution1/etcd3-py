@@ -41,11 +41,18 @@ def test_watcher(client):
 
     w.runDaemon()
     time.sleep(0.2)
-    live = w._thread.is_alive()
+    assert w._thread.is_alive()
 
-    with pytest.raises(RuntimeError):
+    with pytest.raises(RuntimeError):  # ensure not running
         w.runDaemon()
-    with pytest.raises(RuntimeError):
+    w.watching = False
+    try:  # ensure not running
+        w.runDaemon()
+    except Exception as e:
+        assert isinstance(e, RuntimeError)
+        assert "watch thread seems running" in str(e)
+    w.watching = True
+    with pytest.raises(RuntimeError):  # ensure not running
         w.run()
 
     assert w.watching
@@ -90,18 +97,22 @@ def test_watcher(client):
     times = 3
     with w:
         etcdctl('put foo bar')
+        revision = None
         for e in w:
             if not times:
                 break
             assert e.key == b'foo'
             assert e.value == b'bar'
-            assert e.header
+            if revision:
+                assert e.header.revision == revision + 1
+            revision = e.header.revision
             etcdctl('put foo bar')
             times -= 1
     assert not w.watching
     assert w._resp.raw.closed
 
     with pytest.raises(TypeError):  # ensure callbacks
+        w.callbacks.clear()
         w.runDaemon()
 
     # test retry
@@ -121,3 +132,7 @@ def test_watcher(client):
     assert not w.watching
     assert w._resp.raw.closed
     assert len(w.errors) == max_retries
+
+    # watch once
+
+    # test watch cancel handling
