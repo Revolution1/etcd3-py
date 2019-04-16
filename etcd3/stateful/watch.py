@@ -1,3 +1,4 @@
+import logging
 import re
 import socket
 import threading
@@ -149,6 +150,7 @@ class Watcher(object):
         Clear the start_revision that stored in watcher
         """
         self.start_revision = None
+        self.revision = None
 
     def request_create(self):
         """
@@ -279,6 +281,7 @@ class Watcher(object):
         """
         Stop watching, close the watch stream and exit the daemon thread
         """
+        log.debug("stop watching")
         self.watching = False
         self._kill_response_stream()
         if self._thread and self._thread.is_alive() and self._thread.ident != threading.get_ident():
@@ -309,11 +312,11 @@ class Watcher(object):
             with self:
                 for event in self:
                     if filter(event):
-                        self.stop()
                         return event
         except OnceTimeout:
             return
         finally:
+            self.stop()
             self._once = False
             self.timeout = old_timeout
 
@@ -331,13 +334,19 @@ class Watcher(object):
     def __iter__(self):
         self.errors.clear()
         retries = 0
-        self._ensure_not_watching()
         while True:
             try:
                 self.watching = True
-                log.debug("start watching '%s'" % self.key)
-                with self.request_create() as w:
-                    self._resp = w.resp
+                if log.level <= logging.DEBUG:
+                    if self.all:
+                        log.debug("start watching all keys")
+                    elif self.prefix:
+                        log.debug("start watching prefix '%s'" % self.key)
+                    elif self.range_end:
+                        log.debug("start watching from '%s' to '%s'" % (self.key, self.range_end))
+                if not self._resp or self._resp.raw.closed:
+                    self._resp = self.request_create()
+                with self._resp as w:
                     resp = iter(w)
                     while self.watching:
                         r = next(resp)
@@ -354,7 +363,7 @@ class Watcher(object):
                                 err = Etcd3WatchCanceled("watch on compacted revision: %d" % self.start_revision, r)
                             else:
                                 err = Etcd3WatchCanceled(r.cancel_reason, r)
-                            if retries == 0 or retries > self.max_retries:  # first request raise error to caller
+                            if retries == 0 or retries >= self.max_retries:  # first request raise error to caller
                                 raise err
                             else:
                                 self.errors.append(err)
@@ -365,7 +374,6 @@ class Watcher(object):
                         if 'events' in r:
                             for event in r.events:
                                 yield Event(event, r.header)
-            # almost the same as self.run()
             except (ConnectionError, ChunkedEncodingError) as e:
                 # ConnectionError(MaxRetryError) means cannot reach the server
                 if 'Max retries exceeded with url' in str(e):

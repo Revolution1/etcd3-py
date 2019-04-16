@@ -52,6 +52,10 @@ class ModelizedStreamResponse(BaseModelizedStreamResponse):
         self.method = method
 
     @property
+    def connection(self):
+        return self.resp.connection
+
+    @property
     def resp_iter(self):
         return ResponseIter(self.resp)
 
@@ -66,6 +70,9 @@ class ModelizedStreamResponse(BaseModelizedStreamResponse):
 
     def __exit__(self, exc_type, exc_val, exc_tb):
         self.close()
+
+    # def __del__(self):
+    #     self.close()
 
     async def __aenter__(self):
         return self

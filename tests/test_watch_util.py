@@ -4,6 +4,7 @@ import time
 import pytest
 
 from etcd3 import Client, EventType
+from etcd3.errors import Etcd3WatchCanceled
 from tests.docker_cli import docker_run_etcd_main
 from .envs import protocol, host
 from .etcd_go_cli import etcdctl, NO_ETCD_SERVICE
@@ -20,12 +21,13 @@ def client():
     c.close()
 
 
+MAX_RETRIES = 3
+
+
 @pytest.mark.timeout(60)
 @pytest.mark.skipif(NO_ETCD_SERVICE, reason="no etcd service available")
 def test_watcher(client):
-    max_retries = 3
-    w = client.Watcher(all=True, progress_notify=True, prev_kv=True, max_retries=max_retries)
-
+    w = client.Watcher(all=True, progress_notify=True, prev_kv=True, max_retries=MAX_RETRIES)
     foo_list = []
     fizz_list = []
     all_list = []
@@ -96,31 +98,35 @@ def test_watcher(client):
 
     times = 3
     with w:
-        etcdctl('put foo bar')
+        etcdctl('put foo barr')
         revision = None
         for e in w:
             if not times:
                 break
             assert e.key == b'foo'
-            assert e.value == b'bar'
+            assert e.value == b'barr'
             if revision:
                 assert e.header.revision == revision + 1
             revision = e.header.revision
-            etcdctl('put foo bar')
+            etcdctl('put foo barr')
             times -= 1
     assert not w.watching
     assert w._resp.raw.closed
 
-    with pytest.raises(TypeError):  # ensure callbacks
+    # test ensure callbacks
+    with pytest.raises(TypeError):
         w.callbacks.clear()
         w.runDaemon()
 
-    # test retry
+
+@pytest.mark.timeout(60)
+def test_watcher_retry(client):
+    w = client.Watcher(all=True, progress_notify=True, prev_kv=True, max_retries=MAX_RETRIES)
     w.onEvent(lambda e: None)
     w.runDaemon()
-    times = max_retries + 1
+    times = MAX_RETRIES + 1
     while times:
-        time.sleep(0.5)
+        time.sleep(0.2)
         if not w._resp.raw.closed:  # directly close the tcp connection
             s = socket.fromfd(w._resp.raw._fp.fileno(), socket.AF_INET, socket.SOCK_STREAM)
             s.shutdown(socket.SHUT_RDWR)
@@ -131,8 +137,53 @@ def test_watcher(client):
     assert not w._thread.is_alive()
     assert not w.watching
     assert w._resp.raw.closed
-    assert len(w.errors) == max_retries
+    assert len(w.errors) == MAX_RETRIES
 
+
+@pytest.mark.timeout(60)
+def test_watcher_watch_once_and_cancel_handling(client):
     # watch once
+    old_revision = client.hash().header.revision
+    for i in range(10):
+        etcdctl('put foo %s' % i)
+    w = client.Watcher(all=True, start_revision=old_revision + 1)
+    assert w.watch_once().value == b'0'
+    assert w.revision == old_revision + 10
 
     # test watch cancel handling
+
+    compact_revision = client.hash().header.revision
+    etcdctl("compaction --physical %s" % compact_revision)
+    with pytest.raises(Etcd3WatchCanceled):
+        w = client.Watcher(all=True, start_revision=compact_revision - 1)
+        w.watch_once()
+
+    with pytest.raises(Etcd3WatchCanceled):
+        w = client.Watcher(all=True, start_revision=compact_revision - 1)
+        with w:
+            for _ in w:
+                break
+
+
+@pytest.mark.timeout(60)
+def test_watcher_rewatch_on_compaction(client):
+    # compaction while re-watching
+    w = client.Watcher(all=True)
+    times = 3
+    with w:
+        etcdctl('put foo bare')
+        revision = None
+        for e in w:
+            if not times:
+                break
+            assert e.key == b'foo'
+            assert e.value == b'bare'
+            if revision:
+                assert e.header.revision == revision + 11
+            revision = e.header.revision
+            for i in range(10):  # these event will be compacted
+                etcdctl('put foo %s' % i)
+            etcdctl('put foo bare')  # will receive this event when re-watch
+            etcdctl("compaction --physical %s" % client.hash().header.revision)
+            times -= 1
+            w._kill_response_stream()  # trigger a re-watch

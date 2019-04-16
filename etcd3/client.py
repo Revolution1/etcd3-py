@@ -30,6 +30,10 @@ class ModelizedStreamResponse(BaseModelizedStreamResponse):
         self.resp = resp
         self.decode = decode
 
+    @property
+    def raw(self):
+        return self.resp.raw
+
     def close(self):
         """
         close the stream
@@ -41,6 +45,9 @@ class ModelizedStreamResponse(BaseModelizedStreamResponse):
 
     def __exit__(self, exc_type, exc_val, exc_tb):
         self.close()
+    #
+    # def __del__(self):
+    #     self.close()
 
     def __iter__(self):
         for data in iter_response(self.resp):
