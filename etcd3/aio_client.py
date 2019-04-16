@@ -80,7 +80,7 @@ class ModelizedStreamResponse(BaseModelizedStreamResponse):
     async def __aexit__(self, exc_type, exc_val, exc_tb):
         self.close()
 
-    async def __aiter__(self):
+    def __aiter__(self):
         return self
 
     async def __anext__(self):
@@ -118,7 +118,7 @@ class ResponseIter(object):
         self.left_chunk = b''
         self.i = 0
 
-    async def __aiter__(self):
+    def __aiter__(self):
         return self
 
     async def next(self):

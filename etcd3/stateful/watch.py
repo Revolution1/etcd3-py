@@ -392,4 +392,4 @@ class Watcher(object):
                     # self.watching = False # no need the stop() always called in a with context
                     self.stop()
                     raise
-            time.sleep(0.3)
+            time.sleep(0.2)

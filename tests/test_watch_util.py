@@ -126,7 +126,7 @@ def test_watcher_retry(client):
     w.runDaemon()
     times = MAX_RETRIES + 1
     while times:
-        time.sleep(0.2)
+        time.sleep(0.5)
         if not w._resp.raw.closed:  # directly close the tcp connection
             s = socket.fromfd(w._resp.raw._fp.fileno(), socket.AF_INET, socket.SOCK_STREAM)
             s.shutdown(socket.SHUT_RDWR)
@@ -184,6 +184,7 @@ def test_watcher_rewatch_on_compaction(client):
             for i in range(10):  # these event will be compacted
                 etcdctl('put foo %s' % i)
             etcdctl('put foo bare')  # will receive this event when re-watch
-            etcdctl("compaction --physical %s" % client.hash().header.revision)
+            client.compact(client.hash().header.revision, True)
+            # etcdctl("compaction --physical %s" % client.hash().header.revision)
             times -= 1
             w._kill_response_stream()  # trigger a re-watch
