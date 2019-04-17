@@ -12,7 +12,7 @@ from collections import namedtuple, OrderedDict
 from subprocess import Popen, PIPE
 from threading import Lock
 
-try:
+try:  # pragma: no cover
     from collections.abc import Hashable
 except ImportError:
     from typing import Hashable

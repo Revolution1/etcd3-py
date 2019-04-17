@@ -161,7 +161,7 @@ def test_watcher_watch_once_and_cancel_handling(client):
         w = client.Watcher(all=True, start_revision=compact_revision - 1)
         with w:
             for _ in w:
-                break
+                pass
 
 
 @pytest.mark.timeout(60)
