@@ -18,6 +18,11 @@ except ImportError:
     from typing import Hashable
 
 try:  # pragma: no cover
+    from threading import get_ident
+except:
+    from thread import get_ident
+
+try:  # pragma: no cover
     from inspect import getfullargspec as getargspec
 except ImportError:  # pragma: no cover
     from inspect import getargspec

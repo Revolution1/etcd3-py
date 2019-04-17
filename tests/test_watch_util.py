@@ -115,7 +115,7 @@ def test_watcher(client):
 
     # test ensure callbacks
     with pytest.raises(TypeError):
-        w.callbacks.clear()
+        w.clear_callbacks()
         w.runDaemon()
 
 
@@ -151,7 +151,6 @@ def test_watcher_watch_once_and_cancel_handling(client):
     assert w.revision == old_revision + 10
 
     # test watch cancel handling
-
     compact_revision = client.hash().header.revision
     etcdctl("compaction --physical %s" % compact_revision)
     with pytest.raises(Etcd3WatchCanceled):
@@ -168,23 +167,28 @@ def test_watcher_watch_once_and_cancel_handling(client):
 @pytest.mark.timeout(60)
 def test_watcher_rewatch_on_compaction(client):
     # compaction while re-watching
-    w = client.Watcher(all=True)
+    w = client.Watcher("foo")
+    assert w.revision is None
+    assert w.start_revision is None
     times = 3
     with w:
         etcdctl('put foo bare')
         revision = None
         for e in w:
+            assert w.revision
+            assert w.start_revision
             if not times:
                 break
-            assert e.key == b'foo'
-            assert e.value == b'bare'
             if revision:
                 assert e.header.revision == revision + 11
+            assert e.key == b'foo'
+            assert e.value == b'bare'
             revision = e.header.revision
             for i in range(10):  # these event will be compacted
                 etcdctl('put foo %s' % i)
             etcdctl('put foo bare')  # will receive this event when re-watch
             client.compact(client.hash().header.revision, True)
+            assert client.hash().header.revision == revision + 11
             # etcdctl("compaction --physical %s" % client.hash().header.revision)
             times -= 1
             w._kill_response_stream()  # trigger a re-watch

@@ -12,6 +12,7 @@ from requests.exceptions import ChunkedEncodingError
 from ..errors import Etcd3WatchCanceled
 from ..models import EventEventType
 from ..utils import check_param
+from ..utils import get_ident
 from ..utils import log
 
 EventType = EventEventType
@@ -152,6 +153,12 @@ class Watcher(object):
         self.start_revision = None
         self.revision = None
 
+    def clear_callbacks(self):
+        """
+        Remove all callbacks
+        """
+        self.callbacks = []
+
     def request_create(self):
         """
         Start a watch request
@@ -223,12 +230,6 @@ class Watcher(object):
             raise TypeError('callback should be a callable')
         self.callbacks.append((self.get_filter(filter), filter, cb))
 
-    def clear_callbacks(self):
-        """
-        Remove all callbacks
-        """
-        self.callbacks = []
-
     def dispatch_event(self, event):
         """
         Find the callbacks, if callback's filter fits this event, call the callback
@@ -247,20 +248,23 @@ class Watcher(object):
     def _ensure_not_watching(self):
         if self.watching is True:
             raise RuntimeError("already watching")
-        if self._thread and self._thread.is_alive() and self._thread.ident != threading.get_ident():
+        if self._thread and self._thread.is_alive() and self._thread.ident != get_ident():
             raise RuntimeError("watch thread seems running")
 
     def _kill_response_stream(self):
         if not self._resp or (self._resp and self._resp.raw.closed):
             return
         try:
-            log.debug("killing response stream")
+            log.debug("closing response stream")
             self.request_cancel()
             s = socket.fromfd(self._resp.raw._fp.fileno(), socket.AF_INET, socket.SOCK_STREAM)
             s.shutdown(socket.SHUT_RDWR)
             s.close()
-        except Exception:
+            self._resp.raw.close()
+            self._resp.close()
             self._resp.connection.close()
+        except Exception:
+            pass
 
     def run(self):
         """
@@ -284,7 +288,7 @@ class Watcher(object):
         log.debug("stop watching")
         self.watching = False
         self._kill_response_stream()
-        if self._thread and self._thread.is_alive() and self._thread.ident != threading.get_ident():
+        if self._thread and self._thread.is_alive() and self._thread.ident != get_ident():
             self._thread.join()
 
     cancel = stop
@@ -347,16 +351,19 @@ class Watcher(object):
                 if not self._resp or self._resp.raw.closed:
                     self._resp = self.request_create()
                 with self._resp as w:
-                    resp = iter(w)
+                    event_stream = iter(w)
                     while self.watching:
-                        r = next(resp)
+                        if self._resp.raw._fp.fp is None:
+                            raise ConnectionError("response connection closed")
+                        r = next(event_stream)
                         log.debug("got a watch response")
                         self.revision = r.header.revision
                         if 'created' in r:
                             log.debug("watch request created")
                             self.start_revision = r.header.revision
                             self.watch_id = r.watch_id
-                        if 'canceled' in r and r.canceled:
+                        if ('canceled' in r and r.canceled) or ('compact_revision' in r and r.compact_revision):
+                            # etcd version < 3.3 returns compact_revision without canceled
                             compacted = False
                             if 'compact_revision' in r and r.compact_revision > 0:
                                 compacted = True

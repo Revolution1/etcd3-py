@@ -19,7 +19,7 @@ Notice: The authentication header through gRPC-JSON-Gateway only supported in [e
 
 ## Features
 
-* [x] Support python2.7 and python3.5+
+* [x] Support python2.7 and python3.5+ (aiohttp requires python3.5.2+)
 * [x] Sync client based on requests
 * [x] Async client based on aiohttp
 * [x] TLS Connection

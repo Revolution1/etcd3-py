@@ -9,6 +9,7 @@ import six
 from .watch import EventType
 from ..errors import ErrLeaseNotFound
 from ..utils import log
+from ..utils import get_ident
 
 
 class EtcdLockError(Exception):
@@ -65,7 +66,7 @@ class Lock(object):  # TODO: maybe we could improve the performance by reduce so
         elif self.reentrant == self.PROCESS:
             return '%s:proc:%s' % (hostname, os.getpid())
         elif self.reentrant == self.THREAD:
-            return '%s:thrd:%s' % (hostname, threading.get_ident())
+            return '%s:thrd:%s' % (hostname, get_ident())
         elif self.reentrant == self.HOST:
             return self._get_global_uuid('%s:host:%s' % (hostname, socket.gethostbyname(hostname)))
         else:
