@@ -1,3 +1,4 @@
+import logging
 import re
 import socket
 import threading
@@ -8,8 +9,10 @@ import six
 from requests import ConnectionError
 from requests.exceptions import ChunkedEncodingError
 
+from ..errors import Etcd3WatchCanceled
 from ..models import EventEventType
 from ..utils import check_param
+from ..utils import get_ident
 from ..utils import log
 
 EventType = EventEventType
@@ -56,8 +59,9 @@ class Event(KeyValue):
     Watch event
     """
 
-    def __init__(self, data):
+    def __init__(self, data, header=None):
         super(Event, self).__init__(data.kv._data)
+        self.header = header
         self.type = data.type or EventType.PUT  # default is PUT
         self._data['type'] = self.type
         self.prev_kv = None
@@ -147,6 +151,13 @@ class Watcher(object):
         Clear the start_revision that stored in watcher
         """
         self.start_revision = None
+        self.revision = None
+
+    def clear_callbacks(self):
+        """
+        Remove all callbacks
+        """
+        self.callbacks = []
 
     def request_create(self):
         """
@@ -165,8 +176,10 @@ class Watcher(object):
         """
         Cancel the watcher [Not Implemented because of etcd3 returns no watch_id]
         """
+        # once really implemented, the error handling of Etcd3WatchCanceled when manually cancel should be considered
         if self.watch_id:
-            return self.client.watch_cancel(watch_id=self.watch_id)
+            # return self.client.watch_cancel(watch_id=self.watch_id)
+            pass
 
     def get_filter(self, filter):
         """
@@ -217,12 +230,6 @@ class Watcher(object):
             raise TypeError('callback should be a callable')
         self.callbacks.append((self.get_filter(filter), filter, cb))
 
-    def clear_callbacks(self):
-        """
-        Remove all callbacks
-        """
-        self.callbacks = []
-
     def dispatch_event(self, event):
         """
         Find the callbacks, if callback's filter fits this event, call the callback
@@ -241,23 +248,23 @@ class Watcher(object):
     def _ensure_not_watching(self):
         if self.watching is True:
             raise RuntimeError("already watching")
+        if self._thread and self._thread.is_alive() and self._thread.ident != get_ident():
+            raise RuntimeError("watch thread seems running")
 
-    def _run(self):
-        log.debug("start watching '%s'" % self.key)
-        with self.request_create() as w:
-            self._resp = w.resp
-            resp = iter(w)
-            while self.watching:
-                r = next(resp)
-                log.debug("got a watch response")
-                self.revision = r.header.revision
-                if 'created' in r:
-                    log.debug("watch request created")
-                    self.start_revision = r.header.revision
-                if 'events' in r:
-                    for event in r.events:
-                        self.dispatch_event(Event(event))
-        self.watching = False
+    def _kill_response_stream(self):
+        if not self._resp or (self._resp and self._resp.raw.closed):
+            return
+        try:
+            log.debug("closing response stream")
+            self.request_cancel()
+            s = socket.fromfd(self._resp.raw._fp.fileno(), socket.AF_INET, socket.SOCK_STREAM)
+            s.shutdown(socket.SHUT_RDWR)
+            s.close()
+            self._resp.raw.close()
+            self._resp.close()
+            self._resp.connection.close()
+        except Exception:
+            pass
 
     def run(self):
         """
@@ -266,49 +273,22 @@ class Watcher(object):
         self._ensure_callbacks()
         self._ensure_not_watching()
         self.errors.clear()
-        retries = 0
         try:
-            while True:
-                try:
-                    self.watching = True
-                    self._run()
-                    break
-                except (ConnectionError, ChunkedEncodingError) as e:  # TODO: error handling kinda ugly
-                    # ConnectionError(MaxRetryError) means cannot reach the server
-                    if 'Max retries exceeded' in str(e):
-                        raise  # no need to retry
-                    # ChunkedEncodingError usually means we lost the connection, could cause by watcher.stop()
-                    if not self.watching:
-                        break  # watch stopped by user
-                    if retries < self.max_retries:  # connection unexpectedly or just reached the timeout
-                        self.errors.append(e)
-                        log.debug("failed watching (times:%d) retrying %s" % (retries, e))
-                        retries += 1
-                    else:
-                        self.watching = False
-                        raise
-                time.sleep(0.3)
+            with self:
+                for event in self:
+                    self.dispatch_event(event)
         finally:
+            self._kill_response_stream()
             self.watching = False
 
     def stop(self):
         """
         Stop watching, close the watch stream and exit the daemon thread
         """
-        if self.watching is False:
-            log.debug("try to stop, but seems not watching")
-        log.debug("stopping watcher")
+        log.debug("stop watching")
         self.watching = False
-        if not self._resp or (self._resp and self._resp.raw.closed):
-            return
-        try:
-            self.request_cancel()
-            s = socket.fromfd(self._resp.raw._fp.fileno(), socket.AF_INET, socket.SOCK_STREAM)
-            s.shutdown(socket.SHUT_RDWR)
-            s.close()
-        except Exception:
-            self._resp.connection.close()
-        if self._thread:
+        self._kill_response_stream()
+        if self._thread and self._thread.is_alive() and self._thread.ident != get_ident():
             self._thread.join()
 
     cancel = stop
@@ -336,11 +316,11 @@ class Watcher(object):
             with self:
                 for event in self:
                     if filter(event):
-                        self.stop()
                         return event
         except OnceTimeout:
             return
         finally:
+            self.stop()
             self._once = False
             self.timeout = old_timeout
 
@@ -352,29 +332,55 @@ class Watcher(object):
     def __exit__(self, exc_type, exc_val, exc_tb):
         self.stop()
 
+    def __del__(self):
+        self.stop()
+
     def __iter__(self):
         self.errors.clear()
         retries = 0
-        self._ensure_not_watching()
         while True:
             try:
                 self.watching = True
-                log.debug("start watching '%s'" % self.key)
-                with self.request_create() as w:
-                    self._resp = w.resp
-                    resp = iter(w)
+                if log.level <= logging.DEBUG:
+                    if self.all:
+                        log.debug("start watching all keys")
+                    elif self.prefix:
+                        log.debug("start watching prefix '%s'" % self.key)
+                    elif self.range_end:
+                        log.debug("start watching from '%s' to '%s'" % (self.key, self.range_end))
+                if not self._resp or self._resp.raw.closed:
+                    self._resp = self.request_create()
+                with self._resp as w:
+                    event_stream = iter(w)
                     while self.watching:
-                        r = next(resp)
+                        if self._resp.raw._fp.fp is None:
+                            raise ConnectionError("response connection closed")
+                        r = next(event_stream)
                         log.debug("got a watch response")
                         self.revision = r.header.revision
                         if 'created' in r:
                             log.debug("watch request created")
                             self.start_revision = r.header.revision
                             self.watch_id = r.watch_id
+                        if ('canceled' in r and r.canceled) or ('compact_revision' in r and r.compact_revision):
+                            # etcd version < 3.3 returns compact_revision without canceled
+                            compacted = False
+                            if 'compact_revision' in r and r.compact_revision > 0:
+                                compacted = True
+                                err = Etcd3WatchCanceled("watch on compacted revision: %d" % self.start_revision, r)
+                            else:
+                                err = Etcd3WatchCanceled(r.cancel_reason, r)
+                            if retries == 0 or retries >= self.max_retries:  # first request raise error to caller
+                                raise err
+                            else:
+                                self.errors.append(err)
+                                log.debug("failed watching (times:%d) retrying %s" % (retries, err))
+                                if compacted:
+                                    self.revision = r.compact_revision - 1  # next request start from compact_revision
+                                self._kill_response_stream()  # close connection and throw Connection error
                         if 'events' in r:
                             for event in r.events:
-                                yield Event(event)
-            # almost the same as self.run()
+                                yield Event(event, r.header)
             except (ConnectionError, ChunkedEncodingError) as e:
                 # ConnectionError(MaxRetryError) means cannot reach the server
                 if 'Max retries exceeded with url' in str(e):
@@ -383,12 +389,14 @@ class Watcher(object):
                     raise OnceTimeout
                 # ChunkedEncodingError usually means we lost the connection, could cause by watcher.stop()
                 elif not self.watching:
-                    raise StopIteration  # watch stopped by user
+                    # raise StopIteration  # watch stopped by user
+                    return
                 if retries < self.max_retries:  # connection unexpectedly or just reached the timeout
                     self.errors.append(e)
                     log.debug("failed watching (times:%d) retrying %s" % (retries, e))
                     retries += 1
                 else:
                     # self.watching = False # no need the stop() always called in a with context
+                    self.stop()
                     raise
-            time.sleep(0.3)
+            time.sleep(0.2)

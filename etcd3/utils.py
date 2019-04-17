@@ -7,9 +7,20 @@ import shlex
 import sys
 import time
 import warnings
-from collections import namedtuple, OrderedDict, Hashable
+from collections import namedtuple, OrderedDict
+
 from subprocess import Popen, PIPE
 from threading import Lock
+
+try:  # pragma: no cover
+    from collections.abc import Hashable
+except ImportError:
+    from typing import Hashable
+
+try:  # pragma: no cover
+    from threading import get_ident
+except:
+    from thread import get_ident
 
 try:  # pragma: no cover
     from inspect import getfullargspec as getargspec

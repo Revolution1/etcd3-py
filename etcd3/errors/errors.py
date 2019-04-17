@@ -10,6 +10,12 @@ class Etcd3StreamError(Etcd3Exception):  # pragma: no cover
         self.resp = resp
 
 
+class Etcd3WatchCanceled(Etcd3Exception):  # pragma: no cover
+    def __init__(self, error, resp):
+        self.error = error
+        self.resp = resp
+
+
 def get_client_error(error, code, status, response=None):
     if six.PY3 and not isinstance(error, six.string_types):
         error = six.text_type(error, encoding='utf-8')

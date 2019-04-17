@@ -1,7 +1,8 @@
 # flake8: noqa
 from .errors import Etcd3StreamError
-from .errors import get_client_error
+from .errors import Etcd3WatchCanceled
 from .errors import UnsupportedServerVersion
+from .errors import get_client_error
 from .go_etcd_rpctypes_error import ErrAuthFailed
 from .go_etcd_rpctypes_error import ErrAuthNotEnabled
 from .go_etcd_rpctypes_error import ErrCompacted
@@ -46,7 +47,7 @@ from .go_etcd_rpctypes_error import ErrUserNotFound
 from .go_etcd_rpctypes_error import ErrValueProvided
 from .go_etcd_rpctypes_error import Etcd3Exception
 
-__all__ = ['Etcd3Exception', 'get_client_error', 'Etcd3StreamError', 'UnsupportedServerVersion']
+__all__ = ['Etcd3Exception', 'get_client_error', 'Etcd3StreamError', 'Etcd3WatchCanceled', 'UnsupportedServerVersion']
 
 __all__ += [
     'ErrEmptyKey',

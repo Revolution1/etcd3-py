@@ -15,9 +15,6 @@ sudo: required
 services:
   - docker
 
-services:
-  - docker
-
 env:
   matrix:
     - ETCD_VER=v3.2.20
@@ -25,8 +22,9 @@ env:
 #    - ETCD_VER=v3.3.4
 #    - ETCD_VER=v3.3.7
 #    - ETCD_VER=v3.3.9
-    - ETCD_VER=v3.3.10
-    
+#    - ETCD_VER=v3.3.10
+    - ETCD_VER=v3.3.12
+
 
 before_install:
   - sudo docker pull quay.io/coreos/etcd:$ETCD_VER
