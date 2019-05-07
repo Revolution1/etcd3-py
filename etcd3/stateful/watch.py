@@ -185,7 +185,8 @@ class Watcher(object):
             # return self.client.watch_cancel(watch_id=self.watch_id)
             pass
 
-    def get_filter(self, filter):
+    @staticmethod
+    def get_filter(filter):
         """
         Get the event filter function
 

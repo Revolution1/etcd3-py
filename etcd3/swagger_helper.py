@@ -347,7 +347,7 @@ class SwaggerNode(object):
             if 'properties' not in self._node:
                 return {}
             rt = {}
-            for k, v in self.properties._items():
+            for k in self.properties._keys():
                 value = self.properties._get(k).encode(data.get(k))
                 if value is None:
                     continue
