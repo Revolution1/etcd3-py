@@ -23,7 +23,7 @@ name_to_model = {
 __all__ = [{% for e in enums %}
     '{{e._path | last}}',
     {% endfor %}
-    'name_to_model'
+    'name_to_model', 'EtcdModel',
 ]
 
 '''

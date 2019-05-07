@@ -1,11 +1,11 @@
+from collections import deque
+
 import logging
 import re
+import six
 import socket
 import threading
 import time
-from collections import deque
-
-import six
 from requests import ConnectionError
 from requests.exceptions import ChunkedEncodingError
 
@@ -60,6 +60,10 @@ class Event(KeyValue):
     """
 
     def __init__(self, data, header=None):
+        """
+        :param data: dict data of a etcdserverpbWatchResponse.events[<mvccpbEvent>]
+        :param header: the header of etcdserverpbWatchResponse
+        """
         super(Event, self).__init__(data.kv._data)
         self.header = header
         self.type = data.type or EventType.PUT  # default is PUT

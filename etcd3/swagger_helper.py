@@ -1,3 +1,5 @@
+from collections import OrderedDict
+
 import base64
 import copy
 import enum
@@ -6,8 +8,6 @@ import json
 import keyword
 import os
 import re
-from collections import OrderedDict
-
 import six
 
 from .utils import memoize_in_object, cached_property
@@ -230,22 +230,22 @@ class SwaggerSpec(object):
 PROP_ENCODERS = {
     None: lambda x: x,
     'string': lambda x: x,
-    'integer': lambda x: int(x) if x is not None else x,
-    'int64': lambda x: int(x) if x is not None else x,
-    'int32': lambda x: int(x) if x is not None else x,
-    'uint64': lambda x: abs(int(x)) if x is not None else x,
-    'boolean': lambda x: bool(x) if x is not None else x,
+    'integer': lambda x: None if x is None else int(x),
+    'int64': lambda x: None if x is None else int(x),
+    'int32': lambda x: None if x is None else int(x),
+    'uint64': lambda x: None if x is None else abs(int(x)),
+    'boolean': lambda x: None if x is None else bool(x),
 }
 
 if six.PY3:
-    def _encode(data):
+    def _encode_bytes(data):
         """
         Encode the given data using base-64
 
         :param data:
         :return: base-64 encoded string
         """
-        if data is None:
+        if not data:
             return
         if not isinstance(data, six.binary_type):
             data = six.b(str(data))
@@ -253,38 +253,38 @@ if six.PY3:
 
 
     # noqa: E303
-    PROP_ENCODERS['byte'] = _encode
+    PROP_ENCODERS['byte'] = _encode_bytes
 else:
     PROP_ENCODERS['byte'] = lambda x: base64.b64encode(x) if x is not None else x
 
 PROP_DECODERS = {
     None: lambda x: x,
-    'string': lambda x: x,
-    'integer': lambda x: int(x) if x is not None else x,
-    'int64': lambda x: int(x) if x is not None else x,
-    'int32': lambda x: int(x) if x is not None else x,
-    'uint64': lambda x: abs(int(x)) if x is not None else x,
-    'boolean': lambda x: bool(x) if x is not None else x,
-    'byte': lambda x: base64.b64decode(six.binary_type(x, encoding='utf-8')) if x is not None else x
+    'string': lambda x: x or '',
+    'integer': lambda x: 0 if x is None else int(x),
+    'int64': lambda x: 0 if x is None else int(x),
+    'int32': lambda x: 0 if x is None else int(x),
+    'uint64': lambda x: 0 if x is None else abs(int(x)),
+    'boolean': lambda x: False if x is None else bool(x),
+    'byte': lambda x: None if x is None else base64.b64decode(six.binary_type(x, encoding='utf-8'))
 }
 
 if six.PY3:
-    def _decode(data):
+    def _decode_bytes(data):
         """
-        Decode the base-64 encoded string
+        Decode the base64 encoded string
 
-        :param data:
+        :param data: base64 decodeable bytes of ascii string
         :return: decoded string
         """
-        if data is None:
+        if not data:
             return
-        if not isinstance(data, six.binary_type):
-            data = six.b(str(data))
-        return base64.b64decode(data.decode("utf-8"))
+        # if not isinstance(data, six.binary_type):
+        #     data = six.b(str(data))
+        return base64.b64decode(data)
 
 
     # noqa: E303
-    PROP_DECODERS['byte'] = _decode
+    PROP_DECODERS['byte'] = _decode_bytes
 else:
     PROP_DECODERS['byte'] = lambda x: base64.b64decode(x) if x is not None else x
 
@@ -360,7 +360,7 @@ class SwaggerNode(object):
         else:
             if isinstance(data, enum.Enum):
                 data = data.value
-            rt = PROP_ENCODERS[self.type](PROP_ENCODERS[self.format](data))
+            rt = PROP_ENCODERS[self.format or self.type](data)
             if self.default and rt is None:
                 rt = copy.copy(self.default)
             if isinstance(rt, six.binary_type):
@@ -369,7 +369,7 @@ class SwaggerNode(object):
 
     def decode(self, data):
         """
-        decode the data to as the schema defined
+        decode the data as the schema defined
 
         :param data: data to decode
         :return: decoded data
@@ -383,14 +383,15 @@ class SwaggerNode(object):
             for k, v in six.iteritems(data):
                 if k not in self.properties:
                     continue
-                rt[k] = self.properties._get(k).decode(v)
+                _decoder = self.properties._get(k)
+                rt[k] = _decoder.decode(v)
             return rt
         elif self.type == 'array':
             if data is None:
                 return
             return [self.items.decode(i) for i in data]
         else:
-            r = PROP_DECODERS[self.format](PROP_DECODERS[self.type](data))
+            r = PROP_DECODERS[self.format or self.type](data)
             if self._is_enum:
                 m = name_to_model.get(self._path[-1])
                 if m:
@@ -400,24 +401,36 @@ class SwaggerNode(object):
     def getModel(self):
         """
         get the model of the schema
+
+        Null handling:
+            Since etcd's swagger spec is converted from gogoproto files,
+            modelizing will follow the gogoprotobuf deserialization rule:
+
+            int -> 0
+            bool -> False
+            object -> None
+            array -> None
+            string -> ""
         """
         if not hasattr(self, 'type') and self.type:
             raise NotImplementedError
         if self.type == 'object':
             def init(this, data):
+                if data is None:
+                    return
                 if not isinstance(data, dict):
                     raise TypeError("A dict expected, got a '%s' instead" % type(data))
                 this._node = self
                 this._data = data
                 for k in self.properties._keys():
-                    if k not in data:
-                        setattr(this, k, None)
-                        continue
-                    v = data[k]
+                    v = data.get(k)
                     m = self.properties._get(k)
                     if m._is_schema:
-                        m = m.getModel()
-                        v = m(v)
+                        if v is None and m.type not in ('object', 'array'):
+                            v = PROP_DECODERS[m.format or m.type](None)
+                        else:
+                            m = m.getModel()
+                            v = m(v)
                     setattr(this, k, v)
 
             name = self._path[-1]
@@ -434,6 +447,8 @@ class SwaggerNode(object):
             })
         elif self.type == 'array':
             def init(data):
+                if data is None:
+                    return
                 if not isinstance(data, (list, tuple)):
                     raise TypeError("A list or tuple expected, got a '%s' instead" % type(data))
                 m = self.items.getModel()
