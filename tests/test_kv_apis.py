@@ -26,7 +26,6 @@ def clear():
     etcdctl('del', '--from-key', '')
 
 
-@pytest.mark.skipif(NO_ETCD_SERVICE, reason="no etcd service available")
 def test_range(client, request):
     clear()
     request.addfinalizer(clear)
@@ -59,7 +58,13 @@ def test_range(client, request):
     assert len(r.kvs) == 2
 
 
-@pytest.mark.skipif(NO_ETCD_SERVICE, reason="no etcd service available")
+def test_range_count(client, request):
+    clear()
+    request.addfinalizer(clear)
+    r = client.range('some_key_not_exists', prefix=True, count_only=True)
+    assert r.count == 0
+
+
 def test_put(client, request):
     clear()
     request.addfinalizer(clear)
@@ -69,7 +74,6 @@ def test_put(client, request):
     assert client.range('foo').kvs[0].value == b'bra'
 
 
-@pytest.mark.skipif(NO_ETCD_SERVICE, reason="no etcd service available")
 def test_delete(client, request):
     clear()
     request.addfinalizer(clear)
@@ -80,7 +84,6 @@ def test_delete(client, request):
     assert not client.range('fo', prefix=True).kvs
 
 
-@pytest.mark.skipif(NO_ETCD_SERVICE, reason="no etcd service available")
 def test_compact(client, request):
     out = etcdctl('put some thing', json=True)
     if six.PY3:  # pragma: no cover
@@ -89,7 +92,6 @@ def test_compact(client, request):
     assert client.compact(rev, physical=False)
 
 
-@pytest.mark.skipif(NO_ETCD_SERVICE, reason="no etcd service available")
 def test_txn(client, request):
     clear()
     request.addfinalizer(clear)

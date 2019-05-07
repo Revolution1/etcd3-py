@@ -41,14 +41,15 @@ def test_swagger_helper():
     data = {
         u'count': u'1',
         u'header': {
-            u'raft_term': u'2', u'revision': u'10',
+            u'raft_term': u'2',
             u'cluster_id': u'11588568905070377092',
-            u'member_id': u'128088275939295631'
+            u'member_id': u'128088275939295631',
+            # u'revision': '',
         },
         u'kvs': [
             {
                 u'mod_revision': u'10', u'value': u'YmFy',
-                u'create_revision': u'5', u'version': u'6',
+                u'create_revision': u'5', u'version': None,
                 u'key': u'Zm9v'
             }
         ]
@@ -57,5 +58,7 @@ def test_swagger_helper():
     modelized = model(decoded)
     assert modelized.count == 1
     assert modelized.header.raft_term == 2
+    assert modelized.header.revision == 0
     assert modelized.kvs[0].key == b'foo'
     assert modelized.kvs[0].value == b'bar'
+    assert modelized.kvs[0].version == 0

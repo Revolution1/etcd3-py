@@ -1,3 +1,5 @@
+from collections import namedtuple, OrderedDict
+
 import enum
 import functools
 import itertools
@@ -7,19 +9,20 @@ import shlex
 import sys
 import time
 import warnings
-from collections import namedtuple, OrderedDict
-
 from subprocess import Popen, PIPE
 from threading import Lock
 
 try:  # pragma: no cover
     from collections.abc import Hashable
 except ImportError:
-    from typing import Hashable
+    try:
+        from typing import Hashable
+    except ImportError:
+        from collections import Hashable
 
 try:  # pragma: no cover
     from threading import get_ident
-except:
+except ImportError:
     from thread import get_ident
 
 try:  # pragma: no cover

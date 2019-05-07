@@ -13,9 +13,53 @@ class AlarmRequestAlarmAction(EtcdModel, enum.Enum):
 
     default: GET
     """
-    GET = 'GET'
     ACTIVATE = 'ACTIVATE'
     DEACTIVATE = 'DEACTIVATE'
+    GET = 'GET'
+
+
+class authpbPermissionType(EtcdModel, enum.Enum):
+    """
+    ref: #/definitions/authpbPermissionType
+
+    default: READ
+    """
+    READ = 'READ'
+    READWRITE = 'READWRITE'
+    WRITE = 'WRITE'
+
+
+class EventEventType(EtcdModel, enum.Enum):
+    """
+    ref: #/definitions/EventEventType
+
+    default: PUT
+    """
+    DELETE = 'DELETE'
+    PUT = 'PUT'
+
+
+class RangeRequestSortTarget(EtcdModel, enum.Enum):
+    """
+    ref: #/definitions/RangeRequestSortTarget
+
+    default: KEY
+    """
+    CREATE = 'CREATE'
+    KEY = 'KEY'
+    MOD = 'MOD'
+    VALUE = 'VALUE'
+    VERSION = 'VERSION'
+
+
+class etcdserverpbAlarmType(EtcdModel, enum.Enum):
+    """
+    ref: #/definitions/etcdserverpbAlarmType
+
+    default: NONE
+    """
+    NONE = 'NONE'
+    NOSPACE = 'NOSPACE'
 
 
 class CompareCompareResult(EtcdModel, enum.Enum):
@@ -30,50 +74,27 @@ class CompareCompareResult(EtcdModel, enum.Enum):
     NOT_EQUAL = 'NOT_EQUAL'
 
 
-class CompareCompareTarget(EtcdModel, enum.Enum):
-    """
-    ref: #/definitions/CompareCompareTarget
-
-    default: VERSION
-    """
-    VERSION = 'VERSION'
-    CREATE = 'CREATE'
-    MOD = 'MOD'
-    VALUE = 'VALUE'
-
-
-class EventEventType(EtcdModel, enum.Enum):
-    """
-    ref: #/definitions/EventEventType
-
-    default: PUT
-    """
-    PUT = 'PUT'
-    DELETE = 'DELETE'
-
-
 class RangeRequestSortOrder(EtcdModel, enum.Enum):
     """
     ref: #/definitions/RangeRequestSortOrder
 
     default: NONE
     """
-    NONE = 'NONE'
     ASCEND = 'ASCEND'
     DESCEND = 'DESCEND'
+    NONE = 'NONE'
 
 
-class RangeRequestSortTarget(EtcdModel, enum.Enum):
+class CompareCompareTarget(EtcdModel, enum.Enum):
     """
-    ref: #/definitions/RangeRequestSortTarget
+    ref: #/definitions/CompareCompareTarget
 
-    default: KEY
+    default: VERSION
     """
-    KEY = 'KEY'
-    VERSION = 'VERSION'
     CREATE = 'CREATE'
     MOD = 'MOD'
     VALUE = 'VALUE'
+    VERSION = 'VERSION'
 
 
 class WatchCreateRequestFilterType(EtcdModel, enum.Enum):
@@ -82,45 +103,31 @@ class WatchCreateRequestFilterType(EtcdModel, enum.Enum):
 
     default: NOPUT
     """
-    NOPUT = 'NOPUT'
     NODELETE = 'NODELETE'
-
-
-class authpbPermissionType(EtcdModel, enum.Enum):
-    """
-    ref: #/definitions/authpbPermissionType
-
-    default: READ
-    """
-    READ = 'READ'
-    WRITE = 'WRITE'
-    READWRITE = 'READWRITE'
-
-
-class etcdserverpbAlarmType(EtcdModel, enum.Enum):
-    """
-    ref: #/definitions/etcdserverpbAlarmType
-
-    default: NONE
-    """
-    NONE = 'NONE'
-    NOSPACE = 'NOSPACE'
+    NOPUT = 'NOPUT'
 
 
 name_to_model = {
     'AlarmRequestAlarmAction': AlarmRequestAlarmAction,
-    'CompareCompareResult': CompareCompareResult,
-    'CompareCompareTarget': CompareCompareTarget,
-    'EventEventType': EventEventType,
-    'RangeRequestSortOrder': RangeRequestSortOrder,
-    'RangeRequestSortTarget': RangeRequestSortTarget,
-    'WatchCreateRequestFilterType': WatchCreateRequestFilterType,
     'authpbPermissionType': authpbPermissionType,
+    'EventEventType': EventEventType,
+    'RangeRequestSortTarget': RangeRequestSortTarget,
     'etcdserverpbAlarmType': etcdserverpbAlarmType,
+    'CompareCompareResult': CompareCompareResult,
+    'RangeRequestSortOrder': RangeRequestSortOrder,
+    'CompareCompareTarget': CompareCompareTarget,
+    'WatchCreateRequestFilterType': WatchCreateRequestFilterType,
 }
 __all__ = [
-    'AlarmRequestAlarmAction', 'CompareCompareResult', 'CompareCompareTarget',
-    'EventEventType', 'RangeRequestSortOrder', 'RangeRequestSortTarget',
-    'WatchCreateRequestFilterType', 'authpbPermissionType',
-    'etcdserverpbAlarmType', 'name_to_model'
+    'AlarmRequestAlarmAction',
+    'authpbPermissionType',
+    'EventEventType',
+    'RangeRequestSortTarget',
+    'etcdserverpbAlarmType',
+    'CompareCompareResult',
+    'RangeRequestSortOrder',
+    'CompareCompareTarget',
+    'WatchCreateRequestFilterType',
+    'name_to_model',
+    'EtcdModel',
 ]
