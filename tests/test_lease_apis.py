@@ -5,7 +5,7 @@ import pytest
 
 from etcd3.client import Client
 from tests.docker_cli import docker_run_etcd_main
-from .envs import protocol, host, port
+from .envs import protocol, host
 from .etcd_go_cli import NO_ETCD_SERVICE, etcdctl
 
 
