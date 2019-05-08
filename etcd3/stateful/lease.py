@@ -149,7 +149,7 @@ class Lease(object):
                         try:
                             keep_cb()
                         except Exception:
-                            log.exception("stream_cb() raised an error")
+                            log.exception("keep_cb() raised an error")
                     for _ in range(int(self.grantedTTL / 2.0)):  # keep per grantedTTL/4 seconds
                         if not self.keeping:
                             break
