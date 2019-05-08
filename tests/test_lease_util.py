@@ -1,13 +1,13 @@
+import random
 import time
 
 import mock
 import pytest
-import random
 
 from etcd3.client import Client
 from tests.docker_cli import docker_run_etcd_main
 from .envs import protocol, host
-from .etcd_go_cli import NO_ETCD_SERVICE, etcdctl
+from .etcd_go_cli import etcdctl
 
 
 @pytest.fixture(scope='module')
@@ -21,7 +21,6 @@ def client():
     c.close()
 
 
-@pytest.mark.skipif(NO_ETCD_SERVICE, reason="no etcd service available")
 def test_lease_util(client):
     ID = random.randint(10000, 100000)
     TTL = 2  # min is 2sec
@@ -46,6 +45,8 @@ def test_lease_util(client):
     assert not lease.keeping
     assert not lease._thread.is_alive()
 
+
+def test_lease_keep(client):
     ID = random.randint(10000, 100000)
     TTL = 5  # min is 2sec
     keep_cb = mock.Mock()
@@ -54,8 +55,12 @@ def test_lease_util(client):
     lease = client.Lease(ttl=TTL, ID=ID)
     lease.grant()
     lease.keepalive(keep_cb=keep_cb, cancel_cb=cancel_cb)
+    with pytest.raises(RuntimeError):
+        lease.keepalive()
+    time.sleep(1)
     lease.cancel_keepalive()
     assert keep_cb.called
+    assert keep_cb.call_count < 2  # or it keep too fast
     assert cancel_cb.called
 
     lease.keepalive_once()
