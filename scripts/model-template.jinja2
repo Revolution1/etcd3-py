@@ -1,0 +1,36 @@
+# Models generated from rpc.swagger.json, do not edit
+# flake8: noqa
+import enum
+
+class EtcdModel(object):
+    pass
+
+{% for name,d in spec.definitions.items() %}
+    {% if d.enum %}
+class {{name}}(EtcdModel, enum.Enum):
+    """
+    ref: #/definitions/{{ name }}
+
+    default: {{ d.default }}
+    """
+    {% for prop in d.enum %}
+    {{ prop }} = '{{ prop }}'
+    {% endfor %}
+    {% endif %}
+{% endfor %}
+
+
+name_to_model = {
+{% for name,d in spec.definitions.items() %}
+    {% if d.enum %}'{{name}}': {{name}},{% endif %}
+{% endfor %}
+}
+
+
+__all__ =[
+{% for name,d in spec.definitions.items() %}
+    {% if d.enum %}'{{name}}',{% endif %}
+{% endfor %}
+    'EtcdModel',
+    'name_to_model',
+]
