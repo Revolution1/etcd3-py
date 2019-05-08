@@ -315,7 +315,7 @@ def iter_json_string(chunk, start=0, lb=_lb, rb=_rb, resp=None, err_cls=ValueErr
     yield False, chunk[last_i:], last_i - 1
 
 
-def _enum_value(e):  # pragma: no cover
+def enum_value(e):  # pragma: no cover
     if isinstance(e, enum.Enum):
         return e.value
     return e

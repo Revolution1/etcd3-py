@@ -7,7 +7,9 @@ from ..models import CompareCompareResult
 from ..models import CompareCompareTarget
 from ..models import RangeRequestSortOrder
 from ..models import RangeRequestSortTarget
-from ..utils import _enum_value
+from ..utils import check_param
+from ..utils import enum_value
+from ..utils import incr_last_byte
 
 kv = KVAPI()
 
@@ -101,14 +103,30 @@ class Txn(object):
         return self.client.txn(compare=self._compare, success=self._success, failure=self._failure)
 
     @staticmethod
-    def key(key):
+    @check_param(at_least_one_of=['key', 'all'], at_most_one_of=['range_end', 'prefix', 'all'])
+    def key(key=None, range_end=None, prefix=None, all=None):
         """
         Get the TxnCompareOp of a key
 
-        :param key: str
+        :type key: str or bytes
+        :param key: key is the subject key for the comparison operation.
+        :type range_end: str or bytes
+        :param range_end: range_end is the upper bound on the requested range [key, range_end).
+            If range_end is '\0', the range is all keys >= key.
+            If range_end is key plus one (e.g., "aa"+1 == "ab", "a\xff"+1 == "b"),
+            then the range request gets all keys prefixed with key.
+            If both key and range_end are '\0', then the range request returns all keys.
+        :type prefix: bool
+        :param prefix: if the key is a prefix [default: False]
+        :type all: bool
+        :param all: all the keys [default: False]
         :return: TxnCompareOp
         """
-        return TxnCompareOp(key)
+        if all:
+            key = range_end = '\0'
+        if prefix:
+            range_end = incr_last_byte(key)
+        return TxnCompareOp(key, range_end=range_end)
 
     @staticmethod
     def range(
@@ -131,9 +149,9 @@ class Txn(object):
         """
         Operation of keys in the range from the key-value store.
 
-        :type key: str
+        :type key: str or bytes
         :param key: key is the first key for the range. If range_end is not given, the request only looks up key.
-        :type range_end: str
+        :type range_end: str or bytes
         :param range_end: range_end is the upper bound on the requested range [key, range_end).
             If range_end is '\0', the range is all keys >= key.
             If range_end is key plus one (e.g., "aa"+1 == "ab", "a\xff"+1 == "b"),
@@ -204,7 +222,7 @@ class Txn(object):
         A put request increments the revision of the key-value store
         and generates one event in the event history.
 
-        :type key: str
+        :type key: str or bytes
         :param key: key is the key, in bytes, to put into the key-value store.
         :type value: str
         :param value: value is the value, in bytes, to associate with the key in the key-value store.
@@ -231,9 +249,9 @@ class Txn(object):
         A delete request increments the revision of the key-value store
         and generates a delete event in the event history for every deleted key.
 
-        :type key: str
+        :type key: str or bytes
         :param key: key is the first key to delete in the range.
-        :type range_end: str
+        :type range_end: str or bytes
         :param range_end: range_end is the key following the last key to delete for the range [key, range_end).
             If range_end is not given, the range is defined to contain only the key argument.
             If range_end is one bit larger than the given key, then the range is all the keys
@@ -255,24 +273,26 @@ class TxnCompareOp(object):
     The operator of transaction's compare part
     """
 
-    def __init__(self, key):
+    def __init__(self, key, range_end=None):
         """
         :param key: the key to compare
         """
         if not isinstance(key, (six.string_types, bytes)):
             raise TypeError("parameter 'key' expects (str, bytes) got '%s'" % type(key))
         self._key = key
+        self._range_end = range_end
         self._result = None
         self._target = None
         self._tmp_target = None
         self._version = None
         self._create_revision = None
         self._mod_revision = None
+        self._lease = None
         self._value = None
 
     def __check_target(self):
         if self._target:
-            raise TypeError("already specified a target '%s'" % _enum_value(self._target))
+            raise TypeError("already set a target '%s'" % enum_value(self._target))
 
     @property
     def value(self):
@@ -310,6 +330,19 @@ class TxnCompareOp(object):
         self._tmp_target = CompareCompareTarget.CREATE
         return self
 
+    @property
+    def lease(self):
+        """
+        represents the lease_id of the key
+
+        ref: https://github.com/etcd-io/etcd/blob/v3.3.12/clientv3/compare.go#L87-L91
+            LeaseValue compares a key's LeaseID to a value of your choosing. The empty
+            LeaseID is 0, otherwise known as `NoLease`.
+        """
+        self.__check_target()
+        self._tmp_target = CompareCompareTarget.LEASE
+        return self
+
     def __set_target(self, v):
         self._target = self._tmp_target
         if not self._target:
@@ -317,22 +350,26 @@ class TxnCompareOp(object):
                 "should specify a target (version, create, mod, value) to compare, "
                 "e.g. txn.key('foo').value == 'bar'"
             )
-        if _enum_value(self._target) == CompareCompareTarget.VALUE.value:
+        if enum_value(self._target) == CompareCompareTarget.VALUE.value:
             if not isinstance(v, (six.string_types, bytes)):
                 raise TypeError("expect (str, bytes) got '%s'" % type(v))
             self._value = v
-        elif _enum_value(self._target) == CompareCompareTarget.VERSION.value:
+        elif enum_value(self._target) == CompareCompareTarget.VERSION.value:
             if not isinstance(v, int):
                 raise TypeError("expect int got '%s'" % type(v))
             self._version = v
-        elif _enum_value(self._target) == CompareCompareTarget.MOD.value:
+        elif enum_value(self._target) == CompareCompareTarget.MOD.value:
             if not isinstance(v, int):
                 raise TypeError("expect int got '%s'" % type(v))
             self._mod_revision = v
-        elif _enum_value(self._target) == CompareCompareTarget.CREATE.value:
+        elif enum_value(self._target) == CompareCompareTarget.CREATE.value:
             if not isinstance(v, int):
                 raise TypeError("expect int got '%s'" % type(v))
             self._create_revision = v
+        elif enum_value(self._target) == CompareCompareTarget.LEASE.value:
+            if not isinstance(v, int):
+                raise TypeError("expect int got '%s'" % type(v))
+            self._lease = v
 
     def __eq__(self, other):
         obj = copy.copy(self)
@@ -369,12 +406,14 @@ class TxnCompareOp(object):
         return the compare payload that the rpc accepts
         """
         data = {
-            "result": _enum_value(self._result),
-            "target": _enum_value(self._target),
+            "result": enum_value(self._result),
+            "target": enum_value(self._target),
             "key": self._key,
+            "range_end": self._range_end,
             "version": self._version,
             "create_revision": self._create_revision,
             "mod_revision": self._mod_revision,
+            "lease": self._lease,
             "value": self._value
         }
         return {k: v for k, v in data.items() if v is not None}

@@ -9,26 +9,25 @@ First you need a golang environment and install protobuf (protoc)
     For MacOS just run `brew install go protobuf`
 
 Then you need to download/compile some dependencies:
-    go get -u github.com/grpc-ecosystem/grpc-gateway/protoc-gen-grpc-gateway
-    go get -u github.com/grpc-ecosystem/grpc-gateway/protoc-gen-swagger
-    go get -u github.com/golang/protobuf/protoc-gen-go
+    go get -v -u github.com/grpc-ecosystem/grpc-gateway/protoc-gen-grpc-gateway
+    go get -v -u github.com/grpc-ecosystem/grpc-gateway/protoc-gen-swagger
+    go get -v -u github.com/golang/protobuf/protoc-gen-go
 
-    go get -u github.com/gogo/protobuf/proto
-    go get -u github.com/gogo/protobuf/jsonpb
-    go get -u github.com/gogo/protobuf/protoc-gen-gogo
-    go get -u github.com/gogo/protobuf/gogoproto
+    go get -v -u github.com/gogo/protobuf/proto
+    go get -v -u github.com/gogo/protobuf/jsonpb
+    go get -v -u github.com/gogo/protobuf/protoc-gen-gogo
+    go get -v -u github.com/gogo/protobuf/gogoproto
 
-    go get -u go.etcd.io/etcd
+    go get -v -u go.etcd.io/etcd
 
 Find proto files that defines GRPC-Gateway endpoints
     find $GOPATH/src/go.etcd.io/etcd -name '*.proto' |xargs grep -r 'post: "/v3' | cut -d ':' -f 1|uniq
 
 """
-import sys
-
 import json
 import os
 import shutil
+import sys
 
 sys.path.append(os.path.dirname(os.path.dirname(__file__)))
 import six

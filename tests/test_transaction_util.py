@@ -1,3 +1,5 @@
+import random
+
 import pytest
 
 from etcd3 import Client
@@ -59,13 +61,15 @@ def test_transaction(client):
             assert i.response_delete_range.deleted == 1
     assert not client.range('fizz').kvs
 
+    # no gt and lt
     with pytest.raises(NotImplementedError):
         txn.If(txn.key('foo').value >= b'1')
     with pytest.raises(NotImplementedError):
         txn.If(txn.key('foo').value <= b'1')
+
+    # type should match with target
     with pytest.raises(TypeError):
         txn.If(txn.key('foo').value < 1)
-
     with pytest.raises(TypeError):
         txn.If(txn.key('foo').version < 'a')
     with pytest.raises(TypeError):
@@ -78,3 +82,31 @@ def test_transaction(client):
 
     with pytest.raises(TypeError):
         client.Txn().key(123)
+
+    # range_end
+    etcdctl('del', '--from-key', '')
+    etcdctl('put foo 1')
+    etcdctl('put bar 2')
+    etcdctl('put fiz 3')
+    etcdctl('put buz 4')
+
+    txn = client.Txn()
+    r = txn.compare(txn.key(all=True).value > b'0').commit()
+    assert r.succeeded
+
+    txn = client.Txn()
+    r = txn.compare(txn.key(all=True).value < b'3').commit()
+    assert not r.succeeded
+
+    # target lease
+    ID = random.randint(10000, 100000)
+    TTL = 60
+    r = client.lease_grant(TTL, ID=ID)
+    assert r.ID == ID
+
+    hexid = hex(ID)[2:]
+    etcdctl('put --lease=%s foo bar' % hexid)
+
+    txn = client.Txn()
+    r = txn.compare(txn.key('foo').lease == ID).commit()
+    assert r.succeeded

@@ -87,11 +87,11 @@ class AuthAPI(BaseAPI):
 
         :type name: str
         :param name: name is the name of the role which will be granted the permission.
-        :type key: str
+        :type key: str or bytes
         :param key: the key been granted to the role
         :type perm: dict
         :param perm: authpbPermissionType.READ or authpbPermissionType.WRITE or authpbPermissionType.READWRITE
-        :type range_end: str
+        :type range_end: str or bytes
         :param range_end: range_end is the upper bound on the requested range [key, range_end).
             If range_end is '\0', the range is all keys >= key.
             If range_end is key plus one (e.g., "aa"+1 == "ab", "a\xff"+1 == "b"),
@@ -133,9 +133,9 @@ class AuthAPI(BaseAPI):
 
         :type role: str
         :param role: the name of the role which will get permission revoked.
-        :type key: str
+        :type key: str or bytes
         :param key: the key been revoked from the role
-        :type range_end: str
+        :type range_end: str or bytes
         :param range_end: range_end is the upper bound on the requested range [key, range_end).
             If range_end is '\0', the range is all keys >= key.
             If range_end is key plus one (e.g., "aa"+1 == "ab", "a\xff"+1 == "b"),

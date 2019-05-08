@@ -1,15 +1,14 @@
 import os
 import socket
 import tempfile
-import threading
 import uuid
 
 import six
 
 from .watch import EventType
 from ..errors import ErrLeaseNotFound
-from ..utils import log
 from ..utils import get_ident
+from ..utils import log
 
 
 class EtcdLockError(Exception):

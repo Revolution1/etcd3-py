@@ -32,7 +32,7 @@ class LockAPI(BaseAPI):
         lock. The next Lock caller waiting for the lock will then be
         woken up and given ownership of the lock.
 
-        :type key: str
+        :type key: str or bytes
         :param key: key is the lock ownership key granted by Lock.
         :type lease: int
         :param lease: lease is the lease ID to associate with the key in the key-value store. A lease
