@@ -33,9 +33,9 @@ class KVAPI(BaseAPI):
         A delete request increments the revision of the key-value store
         and generates a delete event in the event history for every deleted key.
 
-        :type key: str
+        :type key: str or bytes
         :param key: key is the first key to delete in the range.
-        :type range_end: str
+        :type range_end: str or bytes
         :param range_end: range_end is the key following the last key to delete for the range [key, range_end).
             If range_end is not given, the range is defined to contain only the key argument.
             If range_end is one bit larger than the given key, then the range is all the keys
@@ -72,7 +72,7 @@ class KVAPI(BaseAPI):
         A put request increments the revision of the key-value store
         and generates one event in the event history.
 
-        :type key: str
+        :type key: str or bytes
         :param key: key is the key, in bytes, to put into the key-value store.
         :type value: str
         :param value: value is the value, in bytes, to associate with the key in the key-value store.
@@ -128,9 +128,9 @@ class KVAPI(BaseAPI):
         """
         Range gets the keys in the range from the key-value store.
 
-        :type key: str
+        :type key: str or bytes
         :param key: key is the first key for the range. If range_end is not given, the request only looks up key.
-        :type range_end: str
+        :type range_end: str or bytes
         :param range_end: range_end is the upper bound on the requested range [key, range_end).
             If range_end is '\0', the range is all keys >= key.
             If range_end is key plus one (e.g., "aa"+1 == "ab", "a\xff"+1 == "b"),

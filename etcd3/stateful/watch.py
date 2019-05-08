@@ -1,11 +1,11 @@
-from collections import deque
-
 import logging
 import re
-import six
 import socket
 import threading
 import time
+from collections import deque
+
+import six
 from requests import ConnectionError
 from requests.exceptions import ChunkedEncodingError
 
@@ -88,9 +88,9 @@ class Watcher(object):
         :param client: client instance of etcd3
         :type max_retries: int
         :param max_retries: max retries when watch failed due to network problem, -1 means no limit [default: -1]
-        :type key: str
+        :type key: str or bytes
         :param key: key is the key to register for watching.
-        :type range_end: str
+        :type range_end: str or bytes
         :param range_end: range_end is the end of the range [key, range_end) to watch. If range_end is not given,
             only the key argument is watched. If range_end is equal to '\0', all keys greater than
             or equal to the key argument are watched.

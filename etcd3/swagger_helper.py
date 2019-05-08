@@ -56,7 +56,7 @@ def _format_path(path):  # pragma: no cover
 def _get_path(node, key, default=None):
     """
     :type node: dict
-    :type key: str
+    :type key: str or bytes
     :param default:
     :rtype: str, dict
     """
