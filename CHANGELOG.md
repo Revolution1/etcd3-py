@@ -8,6 +8,7 @@
 - merge pull request [#82](https://github.com/Revolution1/etcd3-py/pull/82) Fix watch util issue #18 and #78
 - merge pull request [#79](https://github.com/Revolution1/etcd3-py/pull/79) Improve etcd comapabitity of multiple versions
 - merge pull request [#51](https://github.com/Revolution1/etcd3-py/pull/51) Add a base EtcdModel to all dynamic created model
+- merge pull request [#50](https://github.com/Revolution1/etcd3-py/pull/50) Add support for lock service API
 - merge pull request [#42](https://github.com/Revolution1/etcd3-py/pull/42) Improve etcd comapabitity of multiple versions
 
 ## 0.1.5 (2018-07-4)
