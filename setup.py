@@ -18,13 +18,10 @@ PY2 = platform.python_version_tuple()[0] == '2'
 print(SHORT_DESCRIPTION)
 print(os.listdir(os.curdir))
 
-readme_path = 'README.md'
-if os.path.isfile('README.rst'):
-    readme_path = 'README.rst'
-with open(readme_path) as readme_file:
+with open('README.md') as readme_file:
     readme = readme_file.read()
 
-with open('CHANGELOG.rst') as history_file:
+with open('CHANGELOG.md') as history_file:
     history = history_file.read()
 
 # parse_requirements() returns generator of pip.req.InstallRequirement objects
@@ -54,6 +51,7 @@ setup(
     version='0.1.6',
     description=SHORT_DESCRIPTION,
     long_description=readme + '\n\n' + history,
+    long_description_content_type="text/markdown",
     author="Renjie Cai",
     author_email='revol.cai@gmail.com',
     url='https://github.com/revolution1/etcd3-py',
