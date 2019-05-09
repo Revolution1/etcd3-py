@@ -5,13 +5,18 @@
 import os
 import platform
 
-try: # for pip >= 10
+SHORT_DESCRIPTION = "Python client for etcd v3 (Using gRPC-JSON-Gateway)"
+
+try:  # for pip >= 10
     from pip._internal.req import parse_requirements
-except ImportError: # for pip <= 9.0.3
+except ImportError:  # for pip <= 9.0.3
     from pip.req import parse_requirements
 from setuptools import setup, find_packages
 
 PY2 = platform.python_version_tuple()[0] == '2'
+
+print(SHORT_DESCRIPTION)
+print(os.listdir(os.curdir))
 
 readme_path = 'README.md'
 if os.path.isfile('README.rst'):
@@ -19,7 +24,7 @@ if os.path.isfile('README.rst'):
 with open(readme_path) as readme_file:
     readme = readme_file.read()
 
-with open('HISTORY.rst') as history_file:
+with open('CHANGELOG.rst') as history_file:
     history = history_file.read()
 
 # parse_requirements() returns generator of pip.req.InstallRequirement objects
@@ -46,8 +51,8 @@ test_requirements = list({str(ir.req) for ir in test_reqs} - set(requirements))
 
 setup(
     name='etcd3-py',
-    version='0.1.5',
-    description="Python client for etcd v3 (Using gRPC-JSON-Gateway)",
+    version='0.1.6',
+    description=SHORT_DESCRIPTION,
     long_description=readme + '\n\n' + history,
     author="Renjie Cai",
     author_email='revol.cai@gmail.com',
@@ -75,6 +80,7 @@ setup(
         'Programming Language :: Python :: 2.7',
         'Programming Language :: Python :: 3.5',
         'Programming Language :: Python :: 3.6',
+        'Programming Language :: Python :: 3.7',
     ],
     test_suite='tests',
     tests_require=test_requirements,
