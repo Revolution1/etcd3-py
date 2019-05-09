@@ -30,7 +30,7 @@ def clear():
     etcdctl('del', '--from-key', '')
 
 
-@pytest.mark.skipif(NO_ETCD_SERVICE, reason="no etcd service available")
+@pytest.mark.timeout(60)
 def test_lock(client):
     clear()
     holds = {}
@@ -89,7 +89,7 @@ def test_lock(client):
     assert l2.holders() == 0
 
 
-@pytest.mark.skipif(NO_ETCD_SERVICE, reason="no etcd service available")
+@pytest.mark.timeout(60)
 def test_reentrant_lock_host(client):
     clear()
     holds = {}
@@ -149,7 +149,6 @@ def test_reentrant_lock_host(client):
 
 
 @pytest.mark.timeout(60)
-@pytest.mark.skipif(NO_ETCD_SERVICE, reason="no etcd service available")
 def test_reentrant_lock(client):
     clear()
     holds = {}

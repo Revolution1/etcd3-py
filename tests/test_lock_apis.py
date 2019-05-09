@@ -33,7 +33,6 @@ KEY = 'test-lock'
 
 
 @pytest.mark.timeout(60)
-@pytest.mark.skipif(NO_ETCD_SERVICE, reason="no etcd service available")
 def test_lock_flow(client):
     clear()
     holds = {}

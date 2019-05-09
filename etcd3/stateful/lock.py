@@ -19,7 +19,6 @@ class EtcdLockAcquireTimeout(Exception):
     pass
 
 
-# TODO: [critical] thread safety
 class Lock(object):  # TODO: maybe we could improve the performance by reduce some HTTP requests
     """
     Locking recipe for etcd, inspired by the kazoo recipe for zookeeper
@@ -188,7 +187,7 @@ class Lock(object):  # TODO: maybe we could improve the performance by reduce so
             if not locker.lease:
                 if not delete_key:
                     raise EtcdLockError("lock-key %s already exist but with no lease attached")
-                log.debug("delete key that has no expiration")
+                log.debug("delete lock key that has no expiration")
                 self.client.delete_range(locker.key)
             elif locker.value == self.uuid:
                 log.debug("we already have the lock")
@@ -206,13 +205,13 @@ class Lock(object):  # TODO: maybe we could improve the performance by reduce so
             elif block:
                 event = self.wait(locker=locker, timeout=timeout)
                 if not event:
-                    log.debug("wait timeout")
+                    log.debug("lock acquire wait timeout")
                     raise EtcdLockAcquireTimeout
             else:
                 self.is_taken = True
                 return
         # locker key not found
-        log.debug("writing key to %s", self.lock_key)
+        log.debug("writing lock key to %s", self.lock_key)
         if self.lease and self.lease.keeping:  # clean old lease that may exist
             self.lease.revoke()
             self.__holders_lease = None
