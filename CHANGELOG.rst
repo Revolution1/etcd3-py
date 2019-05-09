@@ -5,12 +5,12 @@ History
 0.1.6 (2019-05-9)
 ------------------
 
-* merge pull request `#34 <https://github.com/Revolution1/etcd3-py/pull/90>`_ Fix lease util keeping problems
-* merge pull request `#34 <https://github.com/Revolution1/etcd3-py/pull/89>`_ Add range end and lease to txn
-* merge pull request `#34 <https://github.com/Revolution1/etcd3-py/pull/87>`_ Add handel null value as gogoproto does while modelizing response data
-* merge pull request `#34 <https://github.com/Revolution1/etcd3-py/pull/82>`_ Fix watch util issue #18 and #78
-* merge pull request `#34 <https://github.com/Revolution1/etcd3-py/pull/79>`_ Improve etcd comapabitity of multiple versions
-* merge pull request `#34 <https://github.com/Revolution1/etcd3-py/pull/51>`_ Add a base EtcdModel to all dynamic created model
+* merge pull request `#90 <https://github.com/Revolution1/etcd3-py/pull/90>`_ Fix lease util keeping problems
+* merge pull request `#89 <https://github.com/Revolution1/etcd3-py/pull/89>`_ Add range end and lease to txn
+* merge pull request `#87 <https://github.com/Revolution1/etcd3-py/pull/87>`_ Add handel null value as gogoproto does while modelizing response data
+* merge pull request `#82 <https://github.com/Revolution1/etcd3-py/pull/82>`_ Fix watch util issue #18 and #78
+* merge pull request `#79 <https://github.com/Revolution1/etcd3-py/pull/79>`_ Improve etcd comapabitity of multiple versions
+* merge pull request `#51 <https://github.com/Revolution1/etcd3-py/pull/51>`_ Add a base EtcdModel to all dynamic created model
 * merge pull request `#34 <https://github.com/Revolution1/etcd3-py/pull/42>`_ Improve etcd comapabitity of multiple versions
 
 
