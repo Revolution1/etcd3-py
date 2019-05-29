@@ -119,7 +119,7 @@ def test_watcher(client):
         w.runDaemon()
 
 
-@pytest.mark.timeout(60)
+@pytest.mark.timeout(120)
 @pytest.mark.skipif(NO_ETCD_SERVICE, reason="no etcd service available")
 def test_watcher_update_callbacks(client):
     w = client.Watcher(all=True, progress_notify=True, prev_kv=True, max_retries=MAX_RETRIES)
@@ -143,7 +143,9 @@ def test_watcher_update_callbacks(client):
     assert len(foo_list) == 1
     assert len(fizz_list) == 0
 
-    w.onEvent('fiz.', lambda e: fizz_list.append(e))
+    # show we can call .onEvent() while the watcher is running
+    fizz_list_add = lambda e: fizz_list.append(e)
+    w.onEvent('fiz.', fizz_list_add)
     assert len(w.callbacks) == 3
 
     etcdctl('put foo bar')
@@ -155,7 +157,8 @@ def test_watcher_update_callbacks(client):
     assert len(foo_list) == 2
     assert len(fizz_list) == 1
 
-    w.unEvent('foo')
+    # show we can use .unEvent() to remove by filter
+    w.unEvent(filter='foo')
     assert len(w.callbacks) == 2
 
     etcdctl('put foo bar')
@@ -166,6 +169,52 @@ def test_watcher_update_callbacks(client):
 
     assert len(foo_list) == 2
     assert len(fizz_list) == 2
+
+    w.onEvent('fizz', fizz_list_add)
+    assert len(w.callbacks) == 3
+
+    etcdctl('put fizz buzz')
+
+    while len(all_list) < 7:
+        time.sleep(0.2)
+
+    assert len(foo_list) == 2
+    assert len(fizz_list) == 4
+
+    # show we can use .unEvent() to remove by callback
+    w.unEvent(cb=fizz_list_add)
+    assert len(w.callbacks) == 1
+
+    etcdctl('put fizz buzz')
+
+    while len(all_list) < 8:
+        time.sleep(0.2)
+
+    assert len(foo_list) == 2
+    assert len(fizz_list) == 4
+
+    w.onEvent('fi..', fizz_list_add)
+    w.onEvent('fiz.', fizz_list_add)
+    w.onEvent('fiz.', lambda e: fizz_list.append(e))
+    assert len(w.callbacks) == 4
+
+    etcdctl('put fizz buzz')
+
+    while len(all_list) < 9:
+        time.sleep(0.2)
+
+    assert len(fizz_list) == 7
+
+    # show we can use .unevent() to remove by filter _and_ callback
+    w.unEvent(filter='fiz.', cb=fizz_list_add)
+    assert len(w.callbacks) == 3
+
+    etcdctl('put fizz buzz')
+
+    while len(all_list) < 9:
+        time.sleep(0.2)
+
+    assert len(fizz_list) == 9
 
     w.stop()
 

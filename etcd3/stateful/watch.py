@@ -241,7 +241,7 @@ class Watcher(object):
         self.callbacks.append((self.get_filter(filter), filter, cb))
 
     @check_param(at_least_one_of=['filter', 'cb'])
-    def unEvent(self, filter=None, cb=None):
+    def unEvent(self, filter=None, cb=None): # noqa # ignore redefinition of filter
         """
         remove a callback or filter event that's been previously added via onEvent()
         If both parameters are given they are ANDd together; to OR the, make two calls.
