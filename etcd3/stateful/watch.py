@@ -240,6 +240,24 @@ class Watcher(object):
             raise TypeError('callback should be a callable')
         self.callbacks.append((self.get_filter(filter), filter, cb))
 
+    @check_param(at_least_one_of=['filter', 'cb'])
+    def unEvent(self, filter=None, cb=None):
+        """
+        remove a callback or filter event that's been previously added via onEvent()
+        If both parameters are given they are ANDd together; to OR the, make two calls.
+
+        :type filter: callable or regex string or EventType
+        :param filter: the callable filter or regex string or EventType the event to be removed was registerd with
+        :param cb: the callback funtion the event to be removed was registerd with
+        """
+        for i in reversed(range(len(self.callbacks))):
+            efilter, eraw_filter, ecb = self.callbacks[i]
+            if cb is not None and  ecb != cb:
+                    continue
+            if filter is not None and filter not in (efilter, eraw_filter):
+                    continue
+            del self.callbacks[i]
+
     def dispatch_event(self, event):
         """
         Find the callbacks, if callback's filter fits this event, call the callback

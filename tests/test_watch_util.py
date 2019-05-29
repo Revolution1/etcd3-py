@@ -120,6 +120,62 @@ def test_watcher(client):
 
 
 @pytest.mark.timeout(60)
+@pytest.mark.skipif(NO_ETCD_SERVICE, reason="no etcd service available")
+def test_watcher_update_callbacks(client):
+    w = client.Watcher(all=True, progress_notify=True, prev_kv=True, max_retries=MAX_RETRIES)
+    foo_list = []
+    fizz_list = []
+    all_list = []
+    w.onEvent('foo', lambda e: foo_list.append(e))
+    w.onEvent(lambda e: all_list.append(e))
+    assert len(w.callbacks) == 2
+
+    w.runDaemon()
+    time.sleep(0.2)
+    assert w._thread.is_alive()
+
+    etcdctl('put foo bar')
+    etcdctl('put fizz buzz')
+
+    while len(all_list) < 2:
+        time.sleep(0.2)
+
+    assert len(foo_list) == 1
+    assert len(fizz_list) == 0
+
+    w.onEvent('fiz.', lambda e: fizz_list.append(e))
+    assert len(w.callbacks) == 3
+
+    etcdctl('put foo bar')
+    etcdctl('put fizz buzz')
+
+    while len(all_list) < 4:
+        time.sleep(0.2)
+
+    assert len(foo_list) == 2
+    assert len(fizz_list) == 1
+
+    w.unEvent('foo')
+    assert len(w.callbacks) == 2
+
+    etcdctl('put foo bar')
+    etcdctl('put fizz buzz')
+
+    while len(all_list) < 6:
+        time.sleep(0.2)
+
+    assert len(foo_list) == 2
+    assert len(fizz_list) == 2
+
+    w.stop()
+
+    assert not w.watching
+    assert not w._thread.is_alive()
+
+
+
+
+@pytest.mark.timeout(60)
 def test_watcher_retry(client):
     w = client.Watcher(all=True, progress_notify=True, prev_kv=True, max_retries=MAX_RETRIES)
     w.onEvent(lambda e: None)
