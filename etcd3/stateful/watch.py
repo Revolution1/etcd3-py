@@ -199,14 +199,19 @@ class Watcher(object):
         elif isinstance(filter, (six.string_types, bytes)):
             regex = re.compile(filter)
 
-            def filter_func(e):
+            def py2_filter_func(e):
                 key = e.key
-                if six.PY3:
-                    try:
-                        key = six.text_type(e.key, encoding='utf-8')
-                    except Exception:
-                        return
                 return regex.match(key)
+
+            def py3_filter_func(e):
+                try:
+                    key = six.text_type(e.key, encoding='utf-8')
+                except Exception:
+                    return
+                return regex.match(key)
+
+            filter_func = py3_filter_func if six.PY3 else py2_filter_func
+
         elif filter is None:
             filter_func = lambda e: True
         elif isinstance(filter, EventType):
