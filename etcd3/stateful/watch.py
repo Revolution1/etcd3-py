@@ -124,6 +124,7 @@ class Watcher(object):
             max_retries = 9223372036854775807  # maxint
         self.max_retries = max_retries
         self.callbacks = []
+        self.callbacks_lock = threading.Lock()
         self.watching = False
         self.timeout = None  # only meaningful for watch_once
 
@@ -161,7 +162,8 @@ class Watcher(object):
         """
         Remove all callbacks
         """
-        self.callbacks = []
+        with self.callbacks_lock:
+            self.callbacks = []
 
     def request_create(self):
         """
@@ -238,7 +240,9 @@ class Watcher(object):
             cb = filter_or_cb
         if not callable(cb):
             raise TypeError('callback should be a callable')
-        self.callbacks.append((self.get_filter(filter), filter, cb))
+        filter_func = self.get_filter(filter)
+        with self.callbacks_lock:
+            self.callbacks.append((filter_func, filter, cb))
 
     @check_param(at_least_one_of=['filter', 'cb'])
     def unEvent(self, filter=None, cb=None): # noqa # ignore redefinition of filter
@@ -250,13 +254,14 @@ class Watcher(object):
         :param filter: the callable filter or regex string or EventType the event to be removed was registerd with
         :param cb: the callback funtion the event to be removed was registerd with
         """
-        for i in reversed(range(len(self.callbacks))):
-            efilter, eraw_filter, ecb = self.callbacks[i]
-            if cb is not None and  ecb != cb:
-                    continue
-            if filter is not None and filter not in (efilter, eraw_filter):
-                    continue
-            del self.callbacks[i]
+        with self.callbacks_lock:
+            for i in reversed(range(len(self.callbacks))):
+                efilter, eraw_filter, ecb = self.callbacks[i]
+                if cb is not None and ecb != cb:
+                        continue
+                if filter is not None and filter not in (efilter, eraw_filter):
+                        continue
+                del self.callbacks[i]
 
     def dispatch_event(self, event):
         """
@@ -265,9 +270,10 @@ class Watcher(object):
         :param event: Event
         """
         log.debug("dispatching event '%s'" % event)
-        for filter, _, cb in self.callbacks:
-            if filter(event):
-                cb(event)
+        with self.callbacks_lock:
+            callbacks = list( cb for filtr, _, cb in self.callbacks if filtr(event) )
+        for cb in callbacks:
+            cb(event)
 
     def _ensure_callbacks(self):
         if not self.callbacks:

@@ -211,7 +211,7 @@ def test_watcher_update_callbacks(client):
 
     etcdctl('put fizz buzz')
 
-    while len(all_list) < 9:
+    while len(all_list) < 10:
         time.sleep(0.2)
 
     assert len(fizz_list) == 9
