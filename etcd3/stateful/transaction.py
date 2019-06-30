@@ -1,5 +1,3 @@
-import copy
-
 import six
 
 from ..apis import KVAPI
@@ -55,9 +53,10 @@ class Txn(object):
         :param failure: failure components of the transaction, default to []
         """
         self.client = client
-        self._compare = compare or []
-        self._success = success or []
-        self._failure = failure or []
+        self._compare = list(compare or [])
+        self._success = list(success or [])
+        self._failure = list(failure or [])
+        self._committed = False
 
     def clear(self):  # pragma: no cover
         """
@@ -266,6 +265,20 @@ class Txn(object):
         :param all: all the keys [default: False]
         """
         return kv.delete_range(key=key, range_end=range_end, prev_kv=prev_kv, prefix=prefix, all=all, txn_obj=True)
+
+    def __copy__(self):
+        return Txn(
+            client=self.client,
+            compare=self._compare[:],
+            success=self._success[:],
+            failure=self._failure[:]
+        )
+
+    def clone(self):
+        """
+        :return: Txn
+        """
+        return self.__copy__()
 
 
 class TxnCompareOp(object):
