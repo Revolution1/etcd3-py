@@ -110,3 +110,13 @@ def test_transaction(client):
     txn = client.Txn()
     r = txn.compare(txn.key('foo').lease == ID).commit()
     assert r.succeeded
+
+
+def test_txn_clone(client):
+    txn0 = client.Txn()
+    txn0.If(txn0.key('foo').value < b'1')
+    txn1 = txn0.clone()
+    assert id(txn0._compare) != id(txn1._compare)
+    txn0.Then(txn0.range('foo'))
+    assert len(txn0._success) == 1
+    assert len(txn1._success) == 0

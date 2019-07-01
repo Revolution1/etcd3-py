@@ -1,3 +1,5 @@
+import copy
+
 import six
 
 from ..apis import KVAPI
