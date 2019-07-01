@@ -42,7 +42,7 @@ Notice: The authentication header through gRPC-JSON-Gateway only supported in [e
 
 **Install**
 ```bash
-$ pip install etcd3-py
+$ pip install --upgrade etcd3-py
 ```
 
 **Sync Client**
