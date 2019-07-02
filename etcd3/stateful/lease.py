@@ -1,37 +1,13 @@
 """
 Sync lease util
 """
+import sys
 import threading
 import time
-
-import six
 
 from ..errors import ErrLeaseNotFound
 from ..utils import log
 from ..utils import retry
-
-if six.PY2:  # pragma: no cover
-    def wait_lock(lock, timeout):
-        """
-        Hack for python2.7 since it's lock not support timeout
-
-        :param lock: threading.Lock
-        :param timeout: seconds of timeout
-        :return: bool
-        """
-        cond = threading.Condition(threading.Lock())
-        with cond:
-            current_time = start_time = time.time()
-            while current_time < start_time + timeout:
-                if lock.acquire(False):
-                    return True
-                else:
-                    cond.wait(timeout - current_time + start_time)
-                    current_time = time.time()
-        return False
-else:
-    def wait_lock(lock, timeout):
-        return lock.acquire(True, timeout=timeout)
 
 
 class Lease(object):
@@ -55,8 +31,14 @@ class Lease(object):
         self.last_grant = None
         self.keeping = False
         self.last_keep = None
+        self._keepalive_error = None
+        self._keepalive_exc_info = None
+        self._keepalive_keep_cb_error = None
+        self._keepalive_keep_cb_exc_info = None
+        self._keepalive_cancel_cb_error = None
+        self._keepalive_cancel_cb_exc_info = None
         self._thread = None
-        self._lock = threading.Lock()
+        self._lock = threading.Condition()
 
     @property
     def ID(self):
@@ -138,29 +120,39 @@ class Lease(object):
         if self.keeping:
             raise RuntimeError("already keeping")
         self.keeping = True
+        self._keepalive_error = None
+        self._keepalive_exc_info = None
 
         def keepalived():
-            with self._lock:
-                while self.keeping:
-                    retry(self.keepalive_once, max_tries=3, log=log)
-                    self.last_keep = time.time()
-                    log.debug("keeping lease %d" % self.ID)
-                    if keep_cb:
+            try:
+                with self._lock:
+                    while self.keeping:
+                        retry(self.keepalive_once, max_tries=3, log=log)
+                        self.last_keep = time.time()
+                        log.debug("keeping lease %d" % self.ID)
+                        if keep_cb:
+                            try:
+                                keep_cb()
+                            except Exception as e:
+                                log.exception("keep_cb() raised an error")
+                                self._keepalive_keep_cb_error = e
+                                self._keepalive_keep_cb_exc_info = sys.exc_info()
+                        for _ in range(int(self.grantedTTL / 2.0)):  # keep per grantedTTL/4 seconds
+                            if not self.keeping:
+                                break
+                            self._lock.wait(0.5)
+                    log.debug("canceled keeping lease %d" % self.ID)
+                    if cancel_cb:
                         try:
-                            keep_cb()
-                        except Exception:
-                            log.exception("keep_cb() raised an error")
-                    for _ in range(int(self.grantedTTL / 2.0)):  # keep per grantedTTL/4 seconds
-                        if not self.keeping:
-                            break
-                        # self._lock.acquire(True, timeout=0.5)
-                        wait_lock(self._lock, timeout=0.5)
-                log.debug("canceled keeping lease %d" % self.ID)
-                if cancel_cb:
-                    try:
-                        cancel_cb()
-                    except Exception:
-                        log.exception("cancel_cb() raised an error")
+                            cancel_cb()
+                        except Exception as e:
+                            log.exception("cancel_cb() raised an error")
+                            self._keepalive_cancel_cb_error = e
+                            self._keepalive_cancel_cb_exc_info = e
+            except Exception as e:
+                log.exception('error occurred while keeping alive lease')
+                self._keepalive_error = e
+                self._keepalive_exc_info = sys.exc_info()
 
         t = self._thread = threading.Thread(target=keepalived)
         t.setDaemon(True)
@@ -174,10 +166,8 @@ class Lease(object):
         :param join: whether to wait the keepalive thread to exit
         """
         self.keeping = False
-        try:
-            self._lock.acquire(False)
-        finally:
-            self._lock.release()
+        with self._lock:
+            self._lock.notify_all()
         if join and self._thread and self._thread.is_alive():
             self._thread.join()
 

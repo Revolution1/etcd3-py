@@ -73,3 +73,44 @@ def test_lease_keep(client):
     lease.grant()
     assert lease.alive()
     lease.revoke()
+
+
+def test_release_unlocked_lock(client):
+    import threading
+
+    class Lock(threading.Condition):
+        def acquire(self, *args, **kwargs):
+            print("acquiring lock")
+            return super(Lock, self).acquire(*args, **kwargs)
+
+        def release(self):
+            print("releasing lock")
+            return super(Lock, self).release()
+
+        def notify_all(self):
+            print('notify all')
+            return super(Lock, self).notify_all()
+
+        def wait(self, timeout=None):
+            print('waiting lock')
+            return super(Lock, self).wait(timeout)
+
+        def __enter__(self):
+            print("entering lock")
+            return super(Lock, self).__enter__()
+
+        def __exit__(self, exc_type, exc_val, exc_tb):
+            print("exiting lock")
+            return super(Lock, self).__exit__(exc_type, exc_val, exc_tb)
+
+    L = client.Lease(ttl=5)
+    L._lock = Lock()
+    print("start with lock")
+    with L as lease:
+        client.put('foo', 'bar', lease=lease.ID)
+        client.put('fizz', 'buzz', lease=lease.ID)
+        r = lease.time_to_live(keys=True)
+        assert set(r.keys) == {b'foo', b'fizz'}
+        assert lease.alive()
+        print("end with lock")
+    assert L._keepalive_error is None
