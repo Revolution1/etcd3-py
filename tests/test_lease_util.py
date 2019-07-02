@@ -3,6 +3,7 @@ import time
 
 import mock
 import pytest
+import six
 
 from etcd3.client import Client
 from tests.docker_cli import docker_run_etcd_main
@@ -78,10 +79,17 @@ def test_lease_keep(client):
 def test_release_unlocked_lock(client):
     import threading
 
-    class Lock(threading.Condition):
-        def acquire(self, *args, **kwargs):
+    condition = threading.Condition
+    if six.PY2:  # pragma: no cover
+        condition = threading._Condition
+
+    class Lock(condition):  # pragma: no cover
+        def acquire(self, blocking=True, timeout=None):
             print("acquiring lock")
-            return super(Lock, self).acquire(*args, **kwargs)
+            if six.PY3:
+                return super(Lock, self).acquire(blocking, timeout)
+            else:
+                return super(Lock, self).acquire(blocking)
 
         def release(self):
             print("releasing lock")
