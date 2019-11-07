@@ -16,7 +16,7 @@ from .baseclient import DEFAULT_VERSION
 from .errors import Etcd3Exception
 from .errors import Etcd3StreamError
 from .errors import get_client_error
-from .utils import iter_json_string, Etcd3Warning
+from .utils import iter_json_string, Etcd3Warning, cached_property
 
 
 class ModelizedResponse(object):
@@ -174,8 +174,11 @@ class AioClient(BaseClient):
             ssl_context.verify_mode = cert_reqs
             ssl_context.load_verify_locations(cafile=cafile)
             ssl_context.load_cert_chain(*self.cert)
-        connector = aiohttp.TCPConnector(limit=pool_size, ssl=self.ssl_context)
-        self.session = aiohttp.ClientSession(connector=connector)
+
+    @cached_property
+    def session(self):
+        connector = aiohttp.TCPConnector(limit=self.pool_size, ssl=self.ssl_context)
+        return aiohttp.ClientSession(connector=connector)
 
     async def close(self):
         """

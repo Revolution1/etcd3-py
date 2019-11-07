@@ -66,6 +66,7 @@ class BaseClient(AuthAPI, ClusterAPI, KVAPI, LeaseAPI, MaintenanceAPI,
         if not user_agent:
             self.user_agent = 'etcd3-py/' + __version__
         self.timeout = timeout
+        self.pool_size = pool_size
         self.headers = headers or {}
         self.username = username
         self.password = password
