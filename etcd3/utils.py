@@ -157,11 +157,12 @@ def memoize(fn):  # pragma: no cover
     '''
     cache = fn.cache = {}
     fn.invalidate_cache = lambda: cache.clear()
+    fnargs = getargspec(fn).args
 
     @functools.wraps(fn)
     def _memoized(*args, **kwargs):
-        kwargs.update(dict(zip(getargspec(fn).args, args)))
-        key = tuple(kwargs.get(k, None) for k in getargspec(fn).args if k != 'self')
+        kwargs.update(dict(zip(fnargs, args)))
+        key = tuple(kwargs.get(k, None) for k in fnargs if k != 'self')
         if not isinstance(key, Hashable):
             # uncacheable. a list, for instance.
             # better to not cache than blow up.
@@ -181,12 +182,13 @@ def memoize_in_object(fn):  # pragma: no cover
     """
 
     fn.cache = {}
+    fnargs = getargspec(fn).args
 
     @functools.wraps(fn)
     def _memoize(self, *args, **kwargs):
         cache = fn.cache.setdefault(self, {})
-        kwargs.update(dict(zip(getargspec(fn).args, itertools.chain([self], args))))
-        key = tuple(kwargs.get(k, None) for k in getargspec(fn).args if k != 'self')
+        kwargs.update(dict(zip(fnargs, itertools.chain([self], args))))
+        key = tuple(kwargs.get(k, None) for k in fnargs if k != 'self')
         if not isinstance(key, Hashable):
             # uncacheable. a list, for instance.
             # better to not cache than blow up.
