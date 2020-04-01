@@ -241,19 +241,41 @@ def check_param(at_least_one_of=None, at_most_one_of=None):  # pragma: no cover
             raise TypeError("check_param() only accept list or tuple as parameter")
         fnargs = getargspec(fn).args
 
-        @functools.wraps(fn)
-        def inner(*args, **kwargs):
-            arguments = merge_two_dicts(kwargs, dict(zip(fnargs, args)))
-            if at_least_one_of and not [arguments.get(i) for i in at_least_one_of if arguments.get(i) is not None]:
+        def raise_if_not_at_least_one(arguments):
+            if not any(arguments.get(i) != None for i in at_least_one_of):
                 raise TypeError("{name}() requires at least one argument of {args}"
                                 .format(name=fn.__name__, args=','.join(at_least_one_of)))
-            if at_most_one_of:
-                if len([arguments.get(i) for i in at_most_one_of if arguments.get(i) is not None]) > 1:
-                    raise TypeError("{name}() requires at most one of param {args}"
-                                    .format(name=fn.__name__, args=' or '.join(at_most_one_of)))
+
+        def raise_if_more_than_one(arguments):
+            if len([arguments.get(i) for i in at_most_one_of if arguments.get(i) is not None]) > 1:
+                raise TypeError("{name}() requires at most one of param {args}"
+                                .format(name=fn.__name__, args=' or '.join(at_most_one_of)))
+
+        @functools.wraps(fn)
+        def at_least_one(*args, **kwargs):
+            arguments = merge_two_dicts(kwargs, dict(zip(fnargs, args)))
+            raise_if_not_at_least_one(arguments)
             return fn(*args, **kwargs)
 
-        return inner
+        @functools.wraps(fn)
+        def at_most_one(*args, **kwargs):
+            arguments = merge_two_dicts(kwargs, dict(zip(fnargs, args)))
+            raise_if_more_than_one(arguments)
+            return fn(*args, **kwargs)
+
+        @functools.wraps(fn)
+        def both(*args, **kwargs):
+            arguments = merge_two_dicts(kwargs, dict(zip(fnargs, args)))
+            raise_if_not_at_least_one(arguments)
+            raise_if_more_than_one(arguments)
+            return fn(*args, **kwargs)
+
+        if at_least_one_of and not at_most_one_of:
+            return at_least_one
+        elif at_most_one_of and not at_least_one_of:
+            return at_most_one
+        else:
+            return both
 
     return deco
 
