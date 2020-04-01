@@ -197,7 +197,9 @@ class KVAPI(BaseAPI):
             "min_create_revision": min_create_revision,
             "max_create_revision": max_create_revision
         }
-        data = {k: v for k, v in data.items() if v is not None}
+        for k, v in list(data.items()):
+            if v is None:
+                del data[k]
         if txn_obj:
             return {"request_range": data}
         return self.call_rpc(method, data=data)
