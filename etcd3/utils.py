@@ -239,10 +239,11 @@ def check_param(at_least_one_of=None, at_most_one_of=None):  # pragma: no cover
             raise TypeError("check_param() requires at least one argument of at_least_one_of, at_most_one_of")
         if not (isinstance(at_least_one_of, (list, tuple)) or isinstance(at_most_one_of, (list, tuple))):
             raise TypeError("check_param() only accept list or tuple as parameter")
+        fnargs = getargspec(fn).args
 
         @functools.wraps(fn)
         def inner(*args, **kwargs):
-            arguments = merge_two_dicts(kwargs, dict(zip(getargspec(fn).args, args)))
+            arguments = merge_two_dicts(kwargs, dict(zip(fnargs, args)))
             if at_least_one_of and not [arguments.get(i) for i in at_least_one_of if arguments.get(i) is not None]:
                 raise TypeError("{name}() requires at least one argument of {args}"
                                 .format(name=fn.__name__, args=','.join(at_least_one_of)))
