@@ -227,3 +227,17 @@ class KVAPI(BaseAPI):
             "failure": failure
         }
         return self.call_rpc(method, data=data)
+
+
+    # Convenience functions that mostly wrap range() to make it a bit more user-friendly
+
+    async def key_exists(self, key):
+        """Whether the specified key exists in the key-value store"""
+        check = await self.range(key, count_only=True)
+        return bool(check.count)
+
+    async def prefix_count(self, prefix):
+        """The number of keys in the key-value store that start with the specified prefix"""
+        check = await db.range(prefix, count_only=True, prefix=True)
+        return check.count
+
