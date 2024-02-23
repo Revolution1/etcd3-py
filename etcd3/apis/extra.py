@@ -22,7 +22,7 @@ class ExtraAPI(BaseAPI):
         """
         get the health of etcd-server
 
-        :return: EtcdVersion
+        :return: str
         """
         resp = self._get(self._url('/health', prefix=False), headers=self.headers)
         self._raise_for_status(resp)
